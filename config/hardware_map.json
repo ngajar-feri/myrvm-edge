@@ -1,0 +1,82 @@
+{
+    "microcontroller": {
+        "type": "ESP32",
+        "connection": "UART",
+        "port": "/dev/ttyTHS1",
+        "baud_rate": 115200,
+        "default_status": "connected"
+    },
+    "cameras": [
+        {
+            "id": 0,
+            "path": "/dev/video0",
+            "name": "Logitech C920 HD Pro",
+            "connection_type": "USB",
+            "physical_location": "usb-1.4:1.0",
+            "role": "object_detection",
+            "capabilities": {
+                "max_resolution": "1920x1080",
+                "format": "MJPG",
+                "fps": 30
+            }
+        }
+    ],
+    "sensors": [
+        {
+            "name": "bin_ultrasonic",
+            "friendly_name": "Sensor Level Bak Penampungan",
+            "model": "HC-SR04",
+            "interface": "GPIO",
+            "pins": {
+                "trigger": 12,
+                "echo": 13
+            },
+            "unit": "cm"
+        },
+        {
+            "name": "intake_proximity",
+            "friendly_name": "Sensor Deteksi Benda Masuk",
+            "model": "IR Obstacle",
+            "interface": "GPIO",
+            "pin": 18,
+            "active_level": "LOW",
+            "unit": "cm"
+        },
+        {
+            "name": "internal_temp",
+            "friendly_name": "Sensor Suhu Internal",
+            "model": "DHT22",
+            "interface": "GPIO",
+            "pin": 4,
+            "unit": "°C"
+        }
+    ],
+    "actuators": [
+        {
+            "name": "sorting_motor",
+            "friendly_name": "Motor Pemilah",
+            "model": "Stepper NEMA17",
+            "interface": "GPIO",
+            "driver": "TB6600",
+            "pins": {
+                "step": 23,
+                "dir": 24,
+                "enable": 25
+            }
+        },
+        {
+            "name": "door_lock",
+            "friendly_name": "Kunci Pintu",
+            "model": "Solenoid 12V",
+            "interface": "GPIO",
+            "pin": 27
+        },
+        {
+            "name": "status_led",
+            "friendly_name": "Lampu Indikator",
+            "model": "RGB LED Strip",
+            "interface": "GPIO",
+            "pin": 10
+        }
+    ]
+}

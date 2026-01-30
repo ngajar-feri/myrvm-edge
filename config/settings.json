@@ -1,0 +1,5 @@
+{
+    "api_url": "https://myrvm.penelitian.my.id/api/v1", 
+    "device_id": "MOCK_DEVICE_ORIN_1", 
+    "timeout": 10
+}

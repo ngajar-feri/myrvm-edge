@@ -1,0 +1,16 @@
+[Unit]
+Description=MyRVM Edge Service
+After=network.target
+
+[Service]
+Type=simple
+User={{USER}}
+WorkingDirectory={{WORKING_DIR}}
+ExecStart={{WORKING_DIR}}/venv/bin/python -u main.py
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

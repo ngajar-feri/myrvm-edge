@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MyRVM Setup Wizard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #121212;
+            --card-bg: #1e1e1e;
+            --primary: #10b981;
+            --text-main: #ffffff;
+            --text-muted: #9ca3af;
+        }
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            font-family: 'Inter', sans-serif;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .container {
+            background-color: var(--card-bg);
+            padding: 2rem;
+            border-radius: 1rem;
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        h1 { margin-bottom: 0.5rem; }
+        p { color: var(--text-muted); margin-bottom: 2rem; }
+        .upload-area {
+            border: 2px dashed var(--text-muted);
+            border-radius: 0.5rem;
+            padding: 2rem;
+            margin-bottom: 1.5rem;
+            cursor: pointer;
+            transition: border-color 0.2s;
+        }
+        .upload-area:hover { border-color: var(--primary); }
+        input[type="file"] { display: none; }
+        button {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            width: 100%;
+            cursor: pointer;
+        }
+        button:disabled { opacity: 0.5; cursor: not-allowed; }
+        .status { margin-top: 1rem; font-size: 0.875rem; }
+        .success { color: var(--primary); }
+        .error { color: #ef4444; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>MyRVM Setup</h1>
+        <p>Please upload the credentials file (rvm-credentials.json) to provision this device.</p>
+        
+        <form id="uploadForm">
+            <label class="upload-area" for="fileInput">
+                <span id="fileName">Click to select file</span>
+                <input type="file" id="fileInput" accept=".json" required>
+            </label>
+            <button type="submit" id="submitBtn">Provision Device</button>
+        </form>
+        <div id="status" class="status"></div>
+    </div>
+
+    <script>
+        const fileInput = document.getElementById('fileInput');
+        const fileName = document.getElementById('fileName');
+        const form = document.getElementById('uploadForm');
+        const status = document.getElementById('status');
+        const btn = document.getElementById('submitBtn');
+
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                fileName.textContent = e.target.files[0].name;
+            }
+        });
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (!fileInput.files.length) return;
+
+            const formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+
+            btn.disabled = true;
+            btn.textContent = 'Uploading...';
+            status.textContent = '';
+            status.className = 'status';
+
+            try {
+                const res = await fetch('/upload', { method: 'POST', body: formData });
+                const data = await res.json();
+
+                if (res.ok) {
+                    status.textContent = data.message;
+                    status.className = 'status success';
+                    setTimeout(() => window.location.reload(), 3000);
+                } else {
+                    status.textContent = data.detail || 'Upload failed';
+                    status.className = 'status error';
+                    btn.disabled = false;
+                    btn.textContent = 'Provision Device';
+                }
+            } catch (err) {
+                status.textContent = 'Network error';
+                status.className = 'status error';
+                btn.disabled = false;
+                btn.textContent = 'Provision Device';
+            }
+        });
+    </script>
+</body>
+</html>

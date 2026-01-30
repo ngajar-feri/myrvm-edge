@@ -1,0 +1,11 @@
+[Unit]
+Description=MyRVM Edge Auto-Updater
+After=network.target
+
+[Service]
+Type=oneshot
+User={{USER}}
+WorkingDirectory={{WORKING_DIR}}
+ExecStart=/usr/bin/git pull --rebase origin RVMEdge
+StandardOutput=journal
+StandardError=journal

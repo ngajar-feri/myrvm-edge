@@ -1,0 +1,17 @@
+[Unit]
+Description=MyRVM Edge Client v2.0
+After=network.target network-online.target
+Wants=network-online.target
+
+[Service]
+User=myrobot
+Group=rvm-devs
+WorkingDirectory=/home/myrobot/MyRVM1/MyRVM-Edge
+ExecStart=/usr/bin/python3 -u main.py
+Restart=always
+RestartSec=10
+Environment=PYTHONUNBUFFERED=1
+Environment=JETSON_MODEL_NAME=JETSON_ORIN_NANO
+
+[Install]
+WantedBy=multi-user.target
