@@ -16,18 +16,28 @@ SERVICES=("myrvm-edge" "myrvm-updater")
 show_status() {
     echo -e "${CYAN}=== Status Service ===${NC}"
     for service in "${SERVICES[@]}"; do
-        status=$(systemctl is-active $service 2>/dev/null || echo "not-found")
+        if ! systemctl list-unit-files "$service.service" &>/dev/null && ! systemctl list-units "$service.service" &>/dev/null; then
+             echo -e "$service: ${RED}NOT INSTALLED${NC}"
+             continue
+        fi
+
+        status=$(systemctl is-active "$service")
+        
         if [ "$status" == "active" ]; then
             echo -e "$service: ${GREEN}RUNNING${NC}"
-        elif [ "$status" == "not-found" ]; then
-             echo -e "$service: ${RED}NOT INSTALLED${NC}"
-        elif [ "$status" == "inactive" ] && [[ "$service" == *"updater"* ]]; then
-            # Cek apakah sukses terakhir kali
-            if systemctl show "$service" --property=Result | grep -q "success"; then
-                echo -e "$service: ${BLUE}COMPLETED (Success)${NC}"
+        elif [ "$status" == "inactive" ]; then
+            if [[ "$service" == *"updater"* ]]; then
+                # Cek apakah sukses terakhir kali (untuk oneshot)
+                if systemctl show "$service" --property=Result | grep -q "success"; then
+                    echo -e "$service: ${BLUE}COMPLETED (Success)${NC}"
+                else
+                    echo -e "$service: ${YELLOW}IDLE / STOPPED${NC}"
+                fi
             else
-                echo -e "$service: ${YELLOW}IDLE / STOPPED${NC}"
+                echo -e "$service: ${RED}STOPPED${NC}"
             fi
+        elif [ "$status" == "failed" ]; then
+            echo -e "$service: ${RED}FAILED${NC}"
         else
             echo -e "$service: ${RED}STOPPED ($status)${NC}"
         fi
