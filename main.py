@@ -18,6 +18,7 @@ sys.path.append(os.path.dirname(__file__))
 
 from src.services.api_client import RvmApiClient
 from src.hardware.hardware_manager import HardwareManager
+from src.utils.browser_manager import BrowserManager
 
 # Constants
 BASE_DIR = Path(__file__).parent
@@ -168,12 +169,22 @@ def main():
             
     print(f"[*] Handshake Success! Kiosk URL: {config.get('kiosk', {}).get('url')}")
             
-    # 6. Initialize Hardware
+    # 6. Launch Kiosk Interface
+    kiosk_url = config.get('kiosk', {}).get('url')
+    if kiosk_url:
+        print(f"[*] Launching Kiosk interface: {kiosk_url}")
+        browser = BrowserManager(BASE_DIR)
+        # Using auto (will prioritize Firefox as configured in launch_kiosk.sh)
+        browser.launch_kiosk(kiosk_url)
+    else:
+        print("[!] No Kiosk URL received from server.")
+
+    # 7. Initialize Hardware
     print("[*] Initializing Hardware Drivers...")
     hw = HardwareManager()
     hw.initialize_all()
     
-    # 7. Main Loop
+    # 8. Main Loop
     print("[*] Starting Local WebSocket Bridge provided by RVM-Edge...")
     local_ws_process = subprocess.Popen(
         [sys.executable, "src/network/ws_local.py"],

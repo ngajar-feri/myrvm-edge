@@ -394,7 +394,15 @@
             status.className = 'status ' + (res.ok ? 'success' : 'error');
             if (res.ok) {
                 document.querySelectorAll('button').forEach(b => b.disabled = true);
-                setTimeout(() => window.location.reload(), 3000);
+                
+                // Better UX for success state
+                const container = document.querySelector('.container');
+                container.innerHTML = `
+                    <div class="logo">✓</div>
+                    <h1>Setup Successful!</h1>
+                    <p>This device has been provisioned. The Kiosk interface will launch automatically in a few seconds.</p>
+                    <div class="status success" style="display:block">System is rebooting into Normal Mode...</div>
+                `;
             }
         }
 
