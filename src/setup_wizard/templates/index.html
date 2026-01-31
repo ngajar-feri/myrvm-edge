@@ -2,125 +2,398 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>MyRVM Setup Wizard</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg-color: #121212;
-            --card-bg: #1e1e1e;
+            --bg-color: #f8fafc;
+            --card-bg: #ffffff;
             --primary: #10b981;
-            --text-main: #ffffff;
-            --text-muted: #9ca3af;
+            --primary-hover: #059669;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+            --input-bg: #f1f5f9;
+            --shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
+
+        [data-theme="dark"] {
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --primary: #10b981;
+            --primary-hover: #34d399;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --border: #334155;
+            --input-bg: #0f172a;
+            --shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2);
+        }
+
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
         body {
             background-color: var(--bg-color);
             color: var(--text-main);
-            font-family: 'Inter', sans-serif;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            min-height: 100vh;
+            margin: 0;
+            padding: 2rem 1rem;
+            transition: var(--transition);
+            overflow-x: hidden;
+        }
+
+        .container {
+            background-color: var(--card-bg);
+            padding: 2.5rem;
+            border-radius: 1.5rem;
+            width: 100%;
+            max-width: 450px;
+            text-align: center;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border);
+            z-index: 10;
+        }
+
+        .logo {
+            width: 64px;
+            height: 64px;
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            border-radius: 1rem;
+            margin: 0 auto 1.5rem;
             display: flex;
             align-items: center;
             justify-content: center;
-            height: 100vh;
-            margin: 0;
+            color: white;
+            font-size: 2rem;
+            font-weight: 700;
         }
-        .container {
-            background-color: var(--card-bg);
-            padding: 2rem;
-            border-radius: 1rem;
-            width: 100%;
-            max-width: 400px;
-            text-align: center;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+
+        h1 { margin: 0 0 0.5rem; font-size: 1.5rem; font-weight: 700; }
+        p { color: var(--text-muted); margin: 0 0 2rem; font-size: 0.95rem; line-height: 1.5; }
+
+        .tabs {
+            display: flex;
+            background: var(--input-bg);
+            padding: 0.4rem;
+            border-radius: 0.75rem;
+            margin-bottom: 2rem;
+            gap: 0.4rem;
         }
-        h1 { margin-bottom: 0.5rem; }
-        p { color: var(--text-muted); margin-bottom: 2rem; }
-        .upload-area {
-            border: 2px dashed var(--text-muted);
+
+        .tab-btn {
+            flex: 1;
+            padding: 0.6rem;
+            border: none;
+            background: transparent;
+            color: var(--text-muted);
+            font-weight: 600;
+            font-size: 0.85rem;
             border-radius: 0.5rem;
-            padding: 2rem;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .tab-btn.active {
+            background: var(--card-bg);
+            color: var(--primary);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .form-content { display: none; }
+        .form-content.active { display: block; animation: fadeIn 0.3s ease-out; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        .input-group { text-align: left; margin-bottom: 1.25rem; }
+        .input-group label { display: block; margin-bottom: 0.5rem; font-weight: 600; font-size: 0.85rem; color: var(--text-muted); }
+        .input-group input {
+            width: 100%;
+            padding: 0.8rem 1rem;
+            border-radius: 0.75rem;
+            border: 1px solid var(--border);
+            background: var(--input-bg);
+            color: var(--text-main);
+            font-family: inherit;
+            font-size: 1rem;
+            transition: var(--transition);
+        }
+        .input-group input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1); }
+
+        .upload-area {
+            border: 2px dashed var(--border);
+            border-radius: 1rem;
+            padding: 3rem 1rem;
             margin-bottom: 1.5rem;
             cursor: pointer;
-            transition: border-color 0.2s;
+            transition: var(--transition);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1rem;
         }
-        .upload-area:hover { border-color: var(--primary); }
+        .upload-area:hover { border-color: var(--primary); background: rgba(16, 185, 129, 0.05); }
+        .upload-area svg { width: 48px; height: 48px; color: var(--primary); }
         input[type="file"] { display: none; }
-        button {
-            background-color: var(--primary);
+
+        .btn-primary {
+            background: var(--primary);
             color: white;
             border: none;
-            padding: 0.75rem 1.5rem;
-            border-radius: 0.5rem;
-            font-weight: 600;
+            padding: 1rem;
+            border-radius: 0.75rem;
+            font-weight: 700;
             width: 100%;
             cursor: pointer;
+            transition: var(--transition);
+            font-size: 1rem;
         }
-        button:disabled { opacity: 0.5; cursor: not-allowed; }
-        .status { margin-top: 1rem; font-size: 0.875rem; }
-        .success { color: var(--primary); }
-        .error { color: #ef4444; }
+        .btn-primary:hover { background: var(--primary-hover); transform: translateY(-1px); }
+        .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+        /* Virtual Keyboard */
+        .keyboard-container {
+            position: fixed;
+            bottom: -100%;
+            left: 0;
+            width: 100%;
+            background: var(--card-bg);
+            border-top: 1px solid var(--border);
+            padding: 1rem;
+            transition: bottom 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 100;
+            box-shadow: 0 -10px 25px rgba(0,0,0,0.1);
+            display: grid;
+            grid-template-columns: repeat(10, 1fr);
+            gap: 0.5rem;
+        }
+        .keyboard-container.show { bottom: 0; }
+        .key {
+            background: var(--input-bg);
+            border: 1px solid var(--border);
+            border-radius: 0.5rem;
+            padding: 1rem 0;
+            text-align: center;
+            font-weight: 600;
+            cursor: pointer;
+            user-select: none;
+            color: var(--text-main);
+            font-size: 1.2rem;
+        }
+        .key:active { background: var(--primary); color: white; transform: scale(0.95); }
+        .key.wide { grid-column: span 1.5; }
+        .key.extra-wide { grid-column: span 2; }
+        .key.space { grid-column: span 6; }
+        .key.action { background: var(--primary); color: white; border: none; }
+
+        .status { margin-top: 1.5rem; font-size: 0.9rem; padding: 0.75rem; border-radius: 0.5rem; display: none; }
+        .status.success { display: block; background: rgba(16, 185, 129, 0.1); color: var(--primary); border: 1px solid var(--primary); }
+        .status.error { display: block; background: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px solid #ef4444; }
+
+        /* Portrait Optimization */
+        @media (orientation: portrait) {
+            .container { max-width: 90%; }
+            .key { padding: 1.5rem 0; }
+        }
     </style>
 </head>
 <body>
     <div class="container">
+        <div class="logo">M</div>
         <h1>MyRVM Setup</h1>
-        <p>Please upload the credentials file (rvm-credentials.json) to provision this device.</p>
+        <p id="time-display" style="font-size: 0.8rem; margin-top: -1.5rem; margin-bottom: 1.5rem; opacity: 0.7;"></p>
+        <p>Welcome to the Day-0 Provisioning. Choose a method to configure this device.</p>
         
-        <form id="uploadForm">
-            <label class="upload-area" for="fileInput">
-                <span id="fileName">Click to select file</span>
-                <input type="file" id="fileInput" accept=".json" required>
-            </label>
-            <button type="submit" id="submitBtn">Provision Device</button>
-        </form>
+        <div class="tabs">
+            <button class="tab-btn active" onclick="showTab('upload')">Upload JSON</button>
+            <button class="tab-btn" onclick="showTab('manual')">Manual Entry</button>
+        </div>
+
+        <!-- Upload Tab -->
+        <div id="uploadTab" class="form-content active">
+            <form id="uploadForm">
+                <label class="upload-area" for="fileInput">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
+                    <span id="fileName">Drop rvm-credentials.json here</span>
+                    <input type="file" id="fileInput" accept=".json" required>
+                </label>
+                <button type="submit" class="btn-primary" id="uploadBtn">Provision Device</button>
+            </form>
+        </div>
+
+        <!-- Manual Tab -->
+        <div id="manualTab" class="form-content">
+            <form id="manualForm">
+                <div class="input-group">
+                    <label>RVM Serial Number</label>
+                    <input type="text" name="serial_number" id="serialInput" placeholder="e.g. RVM-202601-001" required>
+                </div>
+                <div class="input-group">
+                    <label>API Key</label>
+                    <input type="text" name="api_key" id="apiKeyInput" placeholder="Enter API Key" required>
+                </div>
+                <div class="input-group">
+                    <label>Machine Name</label>
+                    <input type="text" name="name" id="nameInput" placeholder="e.g. Jakarta Hub 1" required>
+                </div>
+                <button type="submit" class="btn-primary" id="manualBtn">Save Configuration</button>
+            </form>
+        </div>
+
         <div id="status" class="status"></div>
     </div>
 
+    <!-- Virtual Keyboard -->
+    <div id="keyboard" class="keyboard-container">
+        <!-- Rows will be injected by JS -->
+    </div>
+
     <script>
+        // Theme Logic
+        function updateTheme() {
+            const now = new Date();
+            const hour = now.getHours();
+            const timeStr = now.toLocaleTimeString();
+            document.getElementById('time-display').textContent = 'Local Time: ' + timeStr;
+            
+            // Auto theme: dark between 18:00 - 06:00
+            const isDark = hour >= 18 || hour < 6;
+            document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
+            console.log('Current hour:', hour, 'Theme:', isDark ? 'dark' : 'light');
+        }
+        updateTheme();
+        setInterval(updateTheme, 1000); // Update every second to show clock
+
+        // Tab Logic
+        function showTab(tab) {
+            document.querySelectorAll('.form-content').forEach(c => c.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById(tab + 'Tab').classList.add('active');
+            
+            // Find the button that was clicked and add active class
+            const btns = document.querySelectorAll('.tab-btn');
+            btns.forEach(btn => {
+                if (btn.textContent.toLowerCase().includes(tab)) {
+                    btn.classList.add('active');
+                }
+            });
+            hideKeyboard();
+        }
+
+        // Virtual Keyboard Logic
+        const keyboard = document.getElementById('keyboard');
+        let currentInput = null;
+
+        const keys = [
+            '1','2','3','4','5','6','7','8','9','0',
+            'Q','W','E','R','T','Y','U','I','O','P',
+            'A','S','D','F','G','H','J','K','L','-',
+            'Z','X','C','V','B','N','M','_','.', '⌫',
+            'SPACE', 'DONE'
+        ];
+
+        function initKeyboard() {
+            keyboard.innerHTML = '';
+            keys.forEach(k => {
+                const key = document.createElement('div');
+                key.className = 'key';
+                if (k === 'SPACE') key.classList.add('space');
+                if (k === 'DONE') key.classList.add('extra-wide', 'action');
+                if (k === '⌫') key.classList.add('wide');
+                
+                key.textContent = k;
+                key.onclick = (e) => {
+                    e.preventDefault();
+                    if (!currentInput) return;
+                    
+                    if (k === '⌫') {
+                        currentInput.value = currentInput.value.slice(0, -1);
+                    } else if (k === 'DONE') {
+                        hideKeyboard();
+                    } else if (k === 'SPACE') {
+                        currentInput.value += ' ';
+                    } else {
+                        currentInput.value += k;
+                    }
+                    currentInput.dispatchEvent(new Event('input'));
+                };
+                keyboard.appendChild(key);
+            });
+        }
+
+        function showKeyboard(input) {
+            currentInput = input;
+            keyboard.classList.add('show');
+            // Scroll to input
+            setTimeout(() => input.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300);
+        }
+
+        function hideKeyboard() {
+            keyboard.classList.remove('show');
+            currentInput = null;
+        }
+
+        document.querySelectorAll('input[type="text"]').forEach(input => {
+            input.onfocus = () => showKeyboard(input);
+            // Prevent physical keyboard on touch devices
+            input.setAttribute('readonly', 'readonly');
+            input.onclick = () => {
+                input.removeAttribute('readonly');
+                input.focus();
+                showKeyboard(input);
+            };
+        });
+
+        // Close keyboard when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!keyboard.contains(e.target) && !e.target.tagName.match(/INPUT/)) {
+                hideKeyboard();
+            }
+        });
+
+        initKeyboard();
+
+        // Form Handlers
         const fileInput = document.getElementById('fileInput');
         const fileName = document.getElementById('fileName');
-        const form = document.getElementById('uploadForm');
         const status = document.getElementById('status');
-        const btn = document.getElementById('submitBtn');
 
-        fileInput.addEventListener('change', (e) => {
-            if (e.target.files.length > 0) {
-                fileName.textContent = e.target.files[0].name;
+        fileInput.onchange = (e) => {
+            if (e.target.files.length > 0) fileName.textContent = e.target.files[0].name;
+        };
+
+        async function handleResponse(res) {
+            const data = await res.json();
+            status.textContent = data.message || data.detail;
+            status.className = 'status ' + (res.ok ? 'success' : 'error');
+            if (res.ok) {
+                document.querySelectorAll('button').forEach(b => b.disabled = true);
+                setTimeout(() => window.location.reload(), 3000);
             }
-        });
+        }
 
-        form.addEventListener('submit', async (e) => {
+        document.getElementById('uploadForm').onsubmit = async (e) => {
             e.preventDefault();
-            if (!fileInput.files.length) return;
-
             const formData = new FormData();
             formData.append('file', fileInput.files[0]);
+            const res = await fetch('/upload', { method: 'POST', body: formData });
+            handleResponse(res);
+        };
 
-            btn.disabled = true;
-            btn.textContent = 'Uploading...';
-            status.textContent = '';
-            status.className = 'status';
-
-            try {
-                const res = await fetch('/upload', { method: 'POST', body: formData });
-                const data = await res.json();
-
-                if (res.ok) {
-                    status.textContent = data.message;
-                    status.className = 'status success';
-                    setTimeout(() => window.location.reload(), 3000);
-                } else {
-                    status.textContent = data.detail || 'Upload failed';
-                    status.className = 'status error';
-                    btn.disabled = false;
-                    btn.textContent = 'Provision Device';
-                }
-            } catch (err) {
-                status.textContent = 'Network error';
-                status.className = 'status error';
-                btn.disabled = false;
-                btn.textContent = 'Provision Device';
-            }
-        });
+        document.getElementById('manualForm').onsubmit = async (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            const res = await fetch('/manual', { method: 'POST', body: formData });
+            handleResponse(res);
+        };
     </script>
 </body>
 </html>
