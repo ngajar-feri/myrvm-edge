@@ -1,0 +1,11 @@
+venv/
+__pycache__/
+*.pyc
+.env
+config/secrets.env
+config/rvm-credentials.json
+config/credential.json
+config/credentials.json
+.vscode/
+.idea/
+*.log
