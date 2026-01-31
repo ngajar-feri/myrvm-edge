@@ -1,96 +1,90 @@
-import http.server
-import socketserver
+from fastapi import FastAPI, Request, UploadFile, File, Form, HTTPException
+from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
 import json
 import os
-import shutil
 from pathlib import Path
-import cgi
+import uvicorn
+import signal
+import threading
+import time
 
 # Paths
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 CONFIG_DIR = BASE_DIR / "config"
 TEMPLATES_DIR = Path(__file__).parent / "templates"
-STATIC_DIR = Path(__file__).parent / "static"
 
 # Ensure config dir exists
 CONFIG_DIR.mkdir(parents=True, exist_ok=True)
 
-class SetupWizardHandler(http.server.SimpleHTTPRequestHandler):
-    def do_GET(self):
-        if self.path == '/':
-            self.send_response(200)
-            self.send_header('Content-type', 'text/html')
-            self.end_headers()
-            with open(TEMPLATES_DIR / "index.html", 'rb') as f:
-                self.wfile.write(f.read())
-        elif self.path.startswith('/static/'):
-            # Serve static files manually if needed or let SimpleHTTPRequestHandler handle it
-            # But we need to map /static/ to the actual static dir
-            local_path = Path(__file__).parent / self.path.lstrip('/')
-            if local_path.exists():
-                self.send_response(200)
-                # Simple guess for content type
-                if self.path.endswith('.css'): self.send_header('Content-type', 'text/css')
-                elif self.path.endswith('.js'): self.send_header('Content-type', 'application/javascript')
-                self.end_headers()
-                with open(local_path, 'rb') as f:
-                    self.wfile.write(f.read())
-            else:
-                self.send_error(404)
-        else:
-            self.send_error(404)
+app = FastAPI(title="MyRVM Setup Wizard")
+templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
 
-    def do_POST(self):
-        if self.path == '/upload':
-            form = cgi.FieldStorage(
-                fp=self.rfile,
-                headers=self.headers,
-                environ={'REQUEST_METHOD': 'POST'}
-            )
+def shutdown():
+    """Shutdown the server after a short delay"""
+    time.sleep(2)
+    os.kill(os.getpid(), signal.SIGINT)
 
-            if 'file' not in form:
-                self._send_json({"detail": "No file uploaded"}, 400)
-                return
+@app.get("/", response_class=HTMLResponse)
+async def index(request: Request):
+    return templates.TemplateResponse("index.html", {"request": request})
 
-            file_item = form['file']
-            if not file_item.filename.endswith('.json'):
-                self._send_json({"detail": "Only JSON files allowed"}, 400)
-                return
+@app.post("/upload")
+async def upload_config(file: UploadFile = File(...)):
+    if not file.filename.endswith('.json'):
+        raise HTTPException(status_code=400, detail="Only JSON files allowed")
+    
+    try:
+        content = await file.read()
+        data = json.loads(content)
+        
+        # Validate Structure
+        required_fields = ["serial_number", "api_key", "name"]
+        for field in required_fields:
+            if field not in data:
+                raise HTTPException(status_code=400, detail=f"Missing required field: {field}")
+        
+        # Write to secrets.env
+        save_credentials(data)
+        
+        # Trigger shutdown in background
+        threading.Thread(target=shutdown).start()
+        
+        return {"status": "success", "message": "Credentials imported successfully. Restarting service..."}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
-            try:
-                data = json.loads(file_item.file.read())
-                
-                # Validate Structure
-                required_fields = ["serial_number", "api_key", "name"]
-                for field in required_fields:
-                    if field not in data:
-                        self._send_json({"detail": f"Missing required field: {field}"}, 400)
-                        return
-                
-                # Write to secrets.env
-                env_path = CONFIG_DIR / "secrets.env"
-                with open(env_path, "w") as f:
-                    f.write(f"RVM_SERIAL_NUMBER={data['serial_number']}\n")
-                    f.write(f"RVM_API_KEY={data['api_key']}\n")
-                    f.write(f"RVM_NAME={data['name']}\n")
-                    f.write(f"RVM_GENERATED_AT={data.get('generated_at', '')}\n")
-                
-                self._send_json({
-                    "status": "success",
-                    "message": "Credentials imported successfully. Rebooting into Normal Mode...",
-                    "data": data
-                })
-            except Exception as e:
-                self._send_json({"detail": str(e)}, 500)
+@app.post("/manual")
+async def manual_config(
+    serial_number: str = Form(...),
+    api_key: str = Form(...),
+    name: str = Form(...)
+):
+    try:
+        data = {
+            "serial_number": serial_number,
+            "api_key": api_key,
+            "name": name
+        }
+        
+        # Write to secrets.env
+        save_credentials(data)
+        
+        # Trigger shutdown in background
+        threading.Thread(target=shutdown).start()
+        
+        return {"status": "success", "message": "Manual setup successful. Restarting service..."}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
-    def _send_json(self, data, status=200):
-        self.send_response(status)
-        self.send_header('Content-type', 'application/json')
-        self.end_headers()
-        self.wfile.write(json.dumps(data).encode())
+def save_credentials(data):
+    env_path = CONFIG_DIR / "secrets.env"
+    with open(env_path, "w") as f:
+        f.write(f"RVM_SERIAL_NUMBER={data['serial_number']}\n")
+        f.write(f"RVM_API_KEY={data['api_key']}\n")
+        f.write(f"RVM_NAME={data['name']}\n")
+        f.write(f"RVM_GENERATED_AT={data.get('generated_at', time.strftime('%Y-%m-%d %H:%M:%S'))}\n")
 
 if __name__ == "__main__":
-    PORT = 8080
-    with socketserver.TCPServer(("", PORT), SetupWizardHandler) as httpd:
-        print(f"[*] MyRVM Setup Wizard (Dependency-free) at port {PORT}")
-        httpd.serve_forever()
+    uvicorn.run(app, host="0.0.0.0", port=8080)
