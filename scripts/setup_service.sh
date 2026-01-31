@@ -18,6 +18,18 @@ REAL_USER=${SUDO_USER:-$USER}
 echo "[*] Detected User: $REAL_USER"
 echo "[*] Working Directory: $WORKING_DIR"
 
+# Virtual Environment Setup
+echo "[*] Setting up Virtual Environment (venv)..."
+if [ ! -d "$WORKING_DIR/venv" ]; then
+    python3 -m venv "$WORKING_DIR/venv"
+    chown -R $REAL_USER:$REAL_USER "$WORKING_DIR/venv"
+fi
+
+# Install Dependencies
+echo "[*] Installing dependencies in venv..."
+sudo -u $REAL_USER "$WORKING_DIR/venv/bin/pip" install --upgrade pip
+sudo -u $REAL_USER "$WORKING_DIR/venv/bin/pip" install -r "$WORKING_DIR/requirements.txt"
+
 # Stop existing manual processes
 echo "[*] Stopping existing manual python processes..."
 pkill -f "python.*main.py" || true

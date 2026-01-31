@@ -19,6 +19,16 @@ class RvmApiClient:
         })
         self.machine_info = {}
         
+        # Load Version
+        self.version = "1.1.0"
+        try:
+            version_path = os.path.join(os.path.dirname(__file__), '../../VERSION')
+            if os.path.exists(version_path):
+                with open(version_path, 'r') as f:
+                    self.version = f.read().strip()
+        except Exception as e:
+            print(f"[!] Failed to load VERSION file: {e}")
+
         # Load Hardware Map
         self.hardware_map = {}
         try:

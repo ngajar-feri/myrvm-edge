@@ -83,6 +83,32 @@ def run_setup_wizard():
         print(f"[!] Wizard crashed: {e}")
         sys.exit(1)
 
+def handle_commands(commands):
+    """Processes remote commands from the server."""
+    for cmd in commands:
+        action = cmd.get('action')
+        print(f"[*] Received remote command: {action}")
+        
+        if action == "GIT_PULL":
+            print("[*] Executing Git Pull...")
+            try:
+                # Use git pull --rebase to avoid merge commits on edge
+                subprocess.run(["git", "pull", "--rebase", "origin", "master"], check=True)
+                print("[+] Git Pull successful.")
+            except Exception as e:
+                print(f"[!] Git Pull failed: {e}")
+                
+        elif action == "RESTART":
+            print("[*] Executing Service Restart...")
+            # We use sudo systemctl restart, requires NOPASSWD in sudoers for this command
+            try:
+                # Using Popen because we want to exit and let the service manager restart us
+                subprocess.Popen(["sudo", "systemctl", "restart", "myrvm-edge.service"])
+                print("[+] Restart command sent.")
+                sys.exit(0)
+            except Exception as e:
+                print(f"[!] Restart failed: {e}")
+
 def main():
     print("=== MyRVM Edge Client v2.0 (Day-0 Ready) ===")
     
