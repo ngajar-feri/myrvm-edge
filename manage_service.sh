@@ -21,6 +21,13 @@ show_status() {
             echo -e "$service: ${GREEN}RUNNING${NC}"
         elif [ "$status" == "not-found" ]; then
              echo -e "$service: ${RED}NOT INSTALLED${NC}"
+        elif [ "$status" == "inactive" ] && [[ "$service" == *"updater"* ]]; then
+            # Cek apakah sukses terakhir kali
+            if systemctl show "$service" --property=Result | grep -q "success"; then
+                echo -e "$service: ${BLUE}COMPLETED (Success)${NC}"
+            else
+                echo -e "$service: ${YELLOW}IDLE / STOPPED${NC}"
+            fi
         else
             echo -e "$service: ${RED}STOPPED ($status)${NC}"
         fi
