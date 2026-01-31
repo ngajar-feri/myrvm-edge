@@ -6,6 +6,6 @@ After=network.target
 Type=oneshot
 User={{USER}}
 WorkingDirectory={{WORKING_DIR}}
-ExecStart=/usr/bin/git pull --rebase origin dev-edge
+ExecStart=/usr/bin/git pull --rebase origin master
 StandardOutput=journal
 StandardError=journal
