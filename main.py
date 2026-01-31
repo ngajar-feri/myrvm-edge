@@ -71,9 +71,9 @@ def run_setup_wizard():
     print("[*] Please upload rvm-credentials.json to provision.")
     
     try:
-        # Run uvicorn as a subprocess
+        # Run uvicorn as a subprocess using the current python interpreter
         subprocess.run(
-            ["uvicorn", "src.setup_wizard.app:app", "--host", "0.0.0.0", "--port", "8080"], 
+            [sys.executable, "-m", "uvicorn", "src.setup_wizard.app:app", "--host", "0.0.0.0", "--port", "8080"], 
             check=True
         )
     except KeyboardInterrupt:
