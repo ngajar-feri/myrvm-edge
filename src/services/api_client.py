@@ -155,6 +155,10 @@ class RvmApiClient:
                 "ip_local": self._get_ip(),
                 "tailscale_ip": self._get_tailscale_ip()
             }
+            
+            # DEBUG: Print Payload to Console
+            print(f"[DEBUG] Heartbeat Payload: {json.dumps(payload, indent=2)}")
+            
             # Heartbeat is lightweight, short timeout
             response = self.session.post(endpoint, json=payload, timeout=5)
             response.raise_for_status()
