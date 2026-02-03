@@ -214,7 +214,10 @@ def main():
     
     # 4. Initialize API Client
     # Respect BASE_URL from secrets.env/env if provided, otherwise fallback to production
-    server_url = os.getenv("BASE_URL", "https://myrvm.penelitian.my.id/api/v1")
+    if os.getenv("APP_ENV") == "local":
+        server_url = os.getenv("DEV_BASE_URL", "https://myrvm.penelitian.my.id/api/v1")
+    else:
+        server_url = os.getenv("BASE_URL", "https://myrvm.penelitian.my.id/api/v1")
     
     client = RvmApiClient(
         base_url=server_url, 
