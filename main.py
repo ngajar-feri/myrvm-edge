@@ -23,6 +23,7 @@ from src.hardware.hardware_manager import HardwareManager
 BASE_DIR = Path(__file__).parent
 CONFIG_DIR = BASE_DIR / "config"
 SECRETS_PATH = CONFIG_DIR / "secrets.env"
+ENV_FILE = ".env"
 
 def get_device_info():
     """Extracts physical hardware serial and model name (Jetson/Pi)."""
@@ -252,17 +253,16 @@ def main():
     
     # 4. Initialize API Client
     # Respect BASE_URL from secrets.env/env if provided, otherwise fallback to production
-    if os.getenv("APP_ENV") == "local":
-        server_url = os.getenv("DEV_BASE_URL", "https://myrvm.penelitian.my.id/api/v1")
+    if os.getenv("APP_ENV") == "production":
+        server_url = os.getenv("BASE_URL", "https://myrvm.penelitian.my.id")
     else:
-        server_url = os.getenv("BASE_URL", "https://myrvm.penelitian.my.id/api/v1")
+        server_url = os.getenv("DEV_BASE_URL", "http://100.105.121.8:8001")
     
     client = RvmApiClient(
-        base_url=server_url, 
+        base_url=f"{server_url}/api/v1", 
         api_key=api_key,
         device_id=serial_number # Using Logical Serial from JSON
     )
-    
     # 5. Handshake Loop
     print("[*] Initiating Handshake...")
     handshake_success = False

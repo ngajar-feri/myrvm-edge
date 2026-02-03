@@ -38,6 +38,7 @@ show_menu() {
     echo -e "2) ${RED}TURN OFF (Stop + Disable)${NC}"
     echo -e "3) ${YELLOW}RESTART Services${NC}"
     echo -e "4) ${BLUE}Check Status${NC}"
+    echo -e "5) ${RED}RESET DAY-0${NC}"
     echo -e "q) Exit"
     echo -e "${CYAN}=======================================${NC}"
 }
@@ -67,6 +68,12 @@ execute_action() {
             echo -e "\nTekan [Enter] untuk melanjutkan..."
             read -r
             ;;
+        5|reset)
+            echo -e "${RED}!!! PERINGATAN: Ini akan mereset device ke status Day-0 !!!${NC}"
+            ./scripts/reset_day0.sh
+            echo -e "\nTekan [Enter] untuk melanjutkan..."
+            read -r
+            ;;
         q|Q)
             echo -e "${GREEN}Sampai jumpa!${NC}"
             exit 0
@@ -87,6 +94,6 @@ fi
 # Jika tidak ada argumen, tampilkan menu interaktif
 while true; do
     show_menu
-    read -p "Pilih opsi [1-4 atau q]: " opt
+    read -p "Pilih opsi [1-5 atau q]: " opt
     execute_action "$opt"
 done
