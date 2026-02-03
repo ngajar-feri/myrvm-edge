@@ -213,8 +213,8 @@ def main():
     print(f"[*] Controller: {model}")
     
     # 4. Initialize API Client
-    # Default URL from spec
-    server_url = "https://myrvm.penelitian.my.id/api/v1" 
+    # Respect BASE_URL from secrets.env/env if provided, otherwise fallback to production
+    server_url = os.getenv("BASE_URL", "https://myrvm.penelitian.my.id/api/v1")
     
     client = RvmApiClient(
         base_url=server_url, 
