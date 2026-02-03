@@ -192,6 +192,7 @@ def main():
         print("[*] Provisioned! Proceeding to boot...")
 
     # 2. Load Credentials
+    load_env_file(BASE_DIR / ".env")
     load_env_file(SECRETS_PATH)
     api_key = os.getenv("RVM_API_KEY")
     serial_number = os.getenv("RVM_SERIAL_NUMBER")
