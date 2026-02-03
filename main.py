@@ -92,8 +92,9 @@ def handle_commands(commands):
         if action == "GIT_PULL":
             print("[*] Executing Git Pull...")
             try:
-                # Use git pull --rebase to avoid merge commits on edge
-                subprocess.run(["git", "pull", "--rebase", "origin", "master"], check=True)
+                # DEVELOPMENT MODE: Pull from dev-edge branch
+                # NOTE: When declaring "Deployment", change to 'master'
+                subprocess.run(["git", "pull", "--rebase", "origin", "dev-edge"], check=True)
                 print("[+] Git Pull successful.")
             except Exception as e:
                 print(f"[!] Git Pull failed: {e}")
@@ -102,12 +103,78 @@ def handle_commands(commands):
             print("[*] Executing Service Restart...")
             # We use sudo systemctl restart, requires NOPASSWD in sudoers for this command
             try:
+                # Check for duplicate/failed service states first
+                result = subprocess.run(
+                    ["systemctl", "is-failed", "myrvm-edge.service"],
+                    capture_output=True, text=True
+                )
+                if result.returncode == 0:  # Service is in failed state
+                    print("[!] Service is in failed state. Resetting...")
+                    subprocess.run(["sudo", "systemctl", "reset-failed", "myrvm-edge.service"])
+                
                 # Using Popen because we want to exit and let the service manager restart us
                 subprocess.Popen(["sudo", "systemctl", "restart", "myrvm-edge.service"])
                 print("[+] Restart command sent.")
                 sys.exit(0)
+            except FileNotFoundError:
+                print("[!] Restart failed: systemctl not found.")
+                print("    Penyebab: Sistem tidak menggunakan systemd.")
+                print("    Solusi: Gunakan restart manual atau init.d script.")
+            except PermissionError:
+                print("[!] Restart failed: Permission denied.")
+                print("    Penyebab: sudo tidak dikonfigurasi dengan NOPASSWD.")
+                print("    Solusi: Tambahkan ke /etc/sudoers:")
+                print("      raspi1 ALL=(ALL) NOPASSWD: /usr/bin/systemctl restart myrvm-edge.service")
             except Exception as e:
                 print(f"[!] Restart failed: {e}")
+                print("    Penyebab umum:")
+                print("    - Service tidak ditemukan: Pastikan myrvm-edge.service sudah di-install.")
+                print("    - Duplicate services: Jalankan 'sudo systemctl reset-failed' lalu coba lagi.")
+
+        elif action == "REBOOT":
+            print("[*] Executing Soft Reboot...")
+            try:
+                # Reboot the entire device
+                subprocess.Popen(["sudo", "reboot"])
+                print("[+] Reboot command sent. Device will restart shortly.")
+                sys.exit(0)
+            except Exception as e:
+                print(f"[!] Reboot failed: {e}")
+                print("    Penyebab: sudo reboot tidak diizinkan.")
+                print("    Solusi: Tambahkan ke /etc/sudoers:")
+                print("      raspi1 ALL=(ALL) NOPASSWD: /sbin/reboot")
+
+        elif action == "MAINTENANCE":
+            print("[*] Entering Maintenance Mode...")
+            # Create maintenance flag file
+            flag_path = BASE_DIR / "config" / ".maintenance_mode"
+            flag_path.touch()
+            print("[+] Maintenance flag set. Launching Maintenance UI...")
+            # TODO: Launch maintenance_ui.py when implemented
+            # subprocess.Popen([sys.executable, "src/ui/maintenance_ui.py"])
+
+        elif action == "EXIT_MAINTENANCE":
+            print("[*] Exiting Maintenance Mode...")
+            # Remove maintenance flag file
+            flag_path = BASE_DIR / "config" / ".maintenance_mode"
+            if flag_path.exists():
+                flag_path.unlink()
+            print("[+] Maintenance flag cleared. Resuming normal operation.")
+
+        elif action == "UPDATE_SERVICE":
+            print("[*] Executing myrvm-updater.service...")
+            try:
+                subprocess.Popen(["sudo", "systemctl", "start", "myrvm-updater.service"])
+                print("[+] Update service started. Git pull will execute.")
+            except FileNotFoundError:
+                print("[!] Update failed: systemctl not found.")
+            except PermissionError:
+                print("[!] Update failed: Permission denied.")
+                print("    Solusi: Tambahkan ke /etc/sudoers:")
+                print("      myrobot ALL=(ALL) NOPASSWD: /usr/bin/systemctl start myrvm-updater.service")
+            except Exception as e:
+                print(f"[!] Update failed: {e}")
+
 
 def main():
     print("=== MyRVM Edge Client v2.0 (Day-0 Ready) ===")
