@@ -176,6 +176,43 @@ def handle_commands(commands):
                 print(f"[!] Update failed: {e}")
 
 
+
+import shutil
+
+def launch_kiosk(url):
+    """Launches Chromium or Firefox in Kiosk mode."""
+    print(f"[*] Launching Kiosk Browser: {url}")
+    
+    # Check for Chromium
+    browser_bin = shutil.which("chromium-browser") or shutil.which("chromium")
+    args = [
+        "--kiosk",
+        "--noerrdialogs", 
+        "--disable-infobars",
+        "--check-for-update-interval=31536000",
+        url
+    ]
+    
+    if not browser_bin:
+        print("[!] Chromium not found. Trying Firefox...")
+        browser_bin = shutil.which("firefox")
+        args = ["--kiosk", url]
+    
+    if not browser_bin:
+        print("[!] No supported browser found (chromium/firefox). Kiosk launch skipped.")
+        return
+
+    try:
+        # Set DISPLAY if not set (assuming :0 for Raspi HDMI)
+        env = os.environ.copy()
+        if "DISPLAY" not in env:
+            env["DISPLAY"] = ":0"
+            
+        subprocess.Popen([browser_bin] + args, env=env)
+        print(f"[+] Kiosk launched: {browser_bin}")
+    except Exception as e:
+        print(f"[!] Failed to launch kiosk: {e}")
+
 def main():
     print("=== MyRVM Edge Client v2.0 (Day-0 Ready) ===")
     
@@ -238,6 +275,11 @@ def main():
             time.sleep(5)
             
     print(f"[*] Handshake Success! Kiosk URL: {config.get('kiosk', {}).get('url')}")
+    
+    # Launch Kiosk Browser
+    kiosk_url = config.get('kiosk', {}).get('url')
+    if kiosk_url:
+        launch_kiosk(kiosk_url)
             
     # 6. Initialize Hardware
     print("[*] Initializing Hardware Drivers...")
