@@ -13,6 +13,14 @@ class RvmApiClient:
         self.device_id = device_id
         self.name = name or platform.node()
         self.session = requests.Session()
+        # Skip SSL verify for local dev/test if specified
+        self.verify = os.getenv("SSL_VERIFY", "true").lower() == "true"
+        self.session.verify = self.verify
+        
+        if not self.verify:
+            import urllib3
+            urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+            
         self.session.headers.update({
             'X-RVM-API-KEY': self.api_key,
             'Accept': 'application/json'
