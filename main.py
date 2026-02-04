@@ -3,6 +3,7 @@ import time
 import json
 import os
 import subprocess
+import shutil
 from pathlib import Path
 def load_env_file(path):
     """Simple replacement for load_dotenv to avoid external dependency."""
@@ -183,7 +184,6 @@ def handle_commands(commands, client):
             try:
                 flag_path = BASE_DIR / "config" / ".camera_active"
                 flag_path.touch()
-                setattr(client, "camera_active", True) # Set flag on client or global
                 print("[+] Camera active flag set.")
             except Exception as e:
                 print(f"[!] Failed to set camera flag: {e}")
@@ -222,10 +222,6 @@ def handle_commands(commands, client):
             except Exception as e:
                 print(f"[!] Capture process failed: {e}")
 
-    except Exception as e:
-        print(f"[!] Command execution error: {e}")
-
-import shutil
 
 def launch_kiosk(url):
     """Launches Chromium or Firefox in Kiosk mode."""
@@ -262,11 +258,15 @@ def launch_kiosk(url):
         print(f"[!] Failed to launch kiosk: {e}")
 
 def main():
-    print("=== MyRVM Edge Client v2.1 (Camera Ready) ===")
+    print("=== MyRVM Edge Client v2.0 (Day-0 Ready) ===")
     
     # 1. Check for Provisioning
     if not SECRETS_PATH.exists():
         run_setup_wizard()
+        # If wizard finishes (returns), it means we might want to restart?
+        # Typically uvicorn runs forever until killed.
+        # But if we implement a restart mechanism in app.py, this script might exit.
+        print("[*] Wizard exited. Checking for config...")
         if not SECRETS_PATH.exists():
             print("[!] Still not provisioned. Exiting.")
             sys.exit(1)
@@ -285,10 +285,17 @@ def main():
     # 3. Hardware Info
     hw_serial, model = get_device_info()
     
+    # Override HW Serial if provided in JSON (usually we want Physical, but maybe Logic ID?)
+    # Spec says: hardware_id: "RVM-202601-006" from json.
+    # But physical ID is useful for asset tracking. 
+    # Let's use the one from secrets as the "Logical ID" for Handshake.
+    
     print(f"[*] Logic ID: {serial_number}")
     print(f"[*] Physical ID: {hw_serial}")
+    print(f"[*] Controller: {model}")
     
     # 4. Initialize API Client
+    # Respect BASE_URL from secrets.env/env if provided, otherwise fallback to production
     if os.getenv("APP_ENV") == "production":
         server_url = os.getenv("BASE_URL", "https://myrvm.penelitian.my.id")
     else:
@@ -297,9 +304,8 @@ def main():
     client = RvmApiClient(
         base_url=f"{server_url}/api/v1", 
         api_key=api_key,
-        device_id=serial_number 
+        device_id=serial_number # Using Logical Serial from JSON
     )
-
     # 5. Handshake Loop
     print("[*] Initiating Handshake...")
     handshake_success = False
@@ -333,7 +339,7 @@ def main():
     print("[*] Entering Main Loop...")
     try:
         while True:
-            time.sleep(2) # Short sleep to prevent busy loop initially
+            time.sleep(10)
             
             # Read real bin capacity if driver exists
             bin_driver = hw.get_driver('bin_ultrasonic')
@@ -341,32 +347,15 @@ def main():
             if bin_driver:
                 distance = bin_driver.read()
                 if distance:
+                    # Logic: Smaller distance = fuller bin.
+                    # Assume 50cm is empty, 5cm is full.
                     bin_level = max(0, min(100, int((50 - distance) / 45 * 100)))
                     print(f"[.] Bin Distance: {distance} cm -> {bin_level}% full")
             
             # Dynamic Hardware Probe
             discovery = hw.get_discovery_report()
             
-            # Heartbeat (contains Camera Status)
             print("[.] Heartbeat with Discovery...")
-            
-            # Inject Camera Status into Heartbeat Payload
-            camera_status = "ready" if getattr(client, "camera_active", False) else "inactive"
-            
-            # Note: client.heartbeat() method signature might need update or we pass it via kwargs if supported
-            # Assuming client.heartbeat merely constructs the payload. 
-            # If not, we should have modified RvmApiClient.status too.
-            # For now, let's assume `client.heartbeat` supports flexible kwargs or we manually send it.
-            # Since I can't easily change RvmApiClient signature across files in this one step without risk,
-            # trusting the previous instruction to inject it via payload if I can access it.
-            # But wait, `client.heartbeat` in `main.py` takes args.
-            
-            # Let's verify `api_client.py` - assuming it's standard.
-            # I will pass it as health_metrics for now if no specific arg exists, OR relying on discovery_report.
-            # Ideally, RvmApiClient.heartbeat should be updated.
-            # For this immediate fix, I'll pass it in `discovery_report` which is a dict.
-            discovery['camera_status'] = camera_status
-            
             commands = client.heartbeat(bin_capacity=bin_level, discovery_report=discovery)
             if commands:
                 handle_commands(commands, client)
@@ -375,8 +364,7 @@ def main():
                 print("[*] --once flag detected. Exiting loop.")
                 break
             
-            time.sleep(40) # Heartbeat interval
-            
+            time.sleep(30)
     except KeyboardInterrupt:
         print("\n[!] Shutting down...")
         hw.cleanup()
