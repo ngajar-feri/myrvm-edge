@@ -261,9 +261,20 @@ def get_default_browser():
         pass
     return None
 
+def kill_existing_browsers():
+    """Kills existing browser processes to free up resources/locks."""
+    for proc in ["firefox", "chromium-browser", "chromium"]:
+        try:
+            subprocess.run(["pkill", "-f", proc], check=False, stderr=subprocess.DEVNULL)
+        except Exception:
+            pass
+
 def launch_kiosk(url):
     """Launches default browser (Firefox/Chromium) in Kiosk mode."""
     print(f"[*] Launching Kiosk Browser: {url}")
+    
+    # Kill existing instances first to avoid profile locks
+    kill_existing_browsers()
     
     # Detect default preference
     default_browser = get_default_browser()
