@@ -256,6 +256,7 @@ def launch_kiosk(url):
         "--noerrdialogs", 
         "--disable-infobars",
         "--check-for-update-interval=31536000",
+        "--ignore-certificate-errors",
         url
     ]
     
