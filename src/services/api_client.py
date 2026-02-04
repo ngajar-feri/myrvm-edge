@@ -174,7 +174,7 @@ class RvmApiClient:
             print(f"[!] Sync Error: {str(e)}")
             return False
 
-    def heartbeat(self, bin_capacity=0, discovery_report=None):
+    def heartbeat(self, bin_capacity=0, discovery_report=None, extra_data=None):
         """
         Sends heartbeat with health metrics, bin capacity, and hardware discovery.
         Returns potential commands from server.
@@ -191,6 +191,10 @@ class RvmApiClient:
                 "ip_local": self._get_ip(),
                 "tailscale_ip": self._get_tailscale_ip()
             }
+            # Merge extra_data if provided (e.g., capture_complete flag)
+            if extra_data:
+                payload.update(extra_data)
+            
             # Heartbeat is lightweight, short timeout
             response = self.session.post(endpoint, json=payload, timeout=5)
             response.raise_for_status()
@@ -203,6 +207,10 @@ class RvmApiClient:
         except Exception as e:
             print(f"[!] Heartbeat Error: {str(e)}")
             return []
+
+    def send_heartbeat(self, extra_data=None):
+        """Convenience wrapper for immediate heartbeat with extra data."""
+        return self.heartbeat(extra_data=extra_data)
 
     # ========== Helper Methods ==========
 

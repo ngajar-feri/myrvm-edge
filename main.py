@@ -212,6 +212,12 @@ def handle_commands(commands, client):
                 # Upload
                 if client.upload_dataset_image(str(img_path), camera_port="/dev/video0"):
                      print("[+] Image captured and uploaded.")
+                     # IMMEDIATE FEEDBACK: Send heartbeat right after capture to notify server
+                     try:
+                         client.send_heartbeat(extra_data={"capture_complete": True})
+                         print("[+] Capture success notified to server.")
+                     except Exception as hb_err:
+                         print(f"[!] Could not send capture notification: {hb_err}")
                 else:
                      print("[!] Upload failed.")
                 
@@ -221,6 +227,7 @@ def handle_commands(commands, client):
                      
             except Exception as e:
                 print(f"[!] Capture process failed: {e}")
+
 
 
 def launch_kiosk(url):
