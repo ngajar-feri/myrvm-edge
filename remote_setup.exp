@@ -1,0 +1,5 @@
+set timeout 60
+spawn ssh -o StrictHostKeyChecking=no raspi1@100.97.142.34 "hostname && mkdir -p ~/proyek && cd ~/proyek && if \[ ! -d .git \]; then git clone https://github.com/ngajar-feri/myrvm-edge.git .; fi && git checkout dev-edge && git pull origin dev-edge"
+expect "password:"
+send "raspi1\r"
+expect eof

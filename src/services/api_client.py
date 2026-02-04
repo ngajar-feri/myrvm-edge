@@ -131,6 +131,34 @@ class RvmApiClient:
             print(f"[!] Deposit Error: {str(e)}")
             return False
 
+    def upload_dataset_image(self, image_path, camera_port=None):
+        """
+        Uploads a raw image for dataset gathering.
+        """
+        endpoint = f"{self.base_url}/dataset/upload"
+        
+        try:
+            if not os.path.exists(image_path):
+                print(f"[-] Image file not found: {image_path}")
+                return False
+
+            with open(image_path, 'rb') as img_file:
+                files = {'image': ('capture.jpg', img_file, 'image/jpeg')}
+                data = {}
+                if camera_port:
+                    data['camera_port'] = camera_port
+                
+                response = self.session.post(endpoint, files=files, data=data, timeout=30)
+                response.raise_for_status()
+                
+                print(f"[+] Dataset Image Uploaded: {response.json().get('message')}")
+                # Return data for UI preview if needed (e.g. url)
+                return response.json().get('data', {})
+
+        except Exception as e:
+            print(f"[!] Dataset Upload Error: {str(e)}")
+            return False
+
     def sync_offline(self, transactions):
         """
         Bulk uploads offline transactions.

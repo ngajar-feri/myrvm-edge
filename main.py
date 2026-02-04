@@ -84,7 +84,7 @@ def run_setup_wizard():
         print(f"[!] Wizard crashed: {e}")
         sys.exit(1)
 
-def handle_commands(commands):
+def handle_commands(commands, client):
     """Processes remote commands from the server."""
     for cmd in commands:
         action = cmd.get('action')
@@ -175,6 +175,51 @@ def handle_commands(commands):
                 print("      myrobot ALL=(ALL) NOPASSWD: /usr/bin/systemctl start myrvm-updater.service")
             except Exception as e:
                 print(f"[!] Update failed: {e}")
+
+        elif action == "CAMERA_PERMISSION":
+            print("[*] Camera Logic: Starting Stream Service...")
+            # Ideally start a stream (mjpeg-streamer / libcamera-vid --inline)
+            # For now, just touch a flag to indicate 'Ready'
+            try:
+                flag_path = BASE_DIR / "config" / ".camera_active"
+                flag_path.touch()
+                print("[+] Camera active flag set.")
+            except Exception as e:
+                print(f"[!] Failed to set camera flag: {e}")
+
+        elif action == "CAPTURE_IMAGE":
+            print("[*] Camera Logic: Capturing Image...")
+            try:
+                # Capture
+                img_path = BASE_DIR / "temp_capture.jpg"
+                camera_cmd = ["libcamera-still", "-o", str(img_path), "--width", "1280", "--height", "720", "--immediate", "--nopreview"]
+                
+                if not shutil.which("libcamera-still"):
+                     if shutil.which("fswebcam"):
+                         camera_cmd = ["fswebcam", "-r", "1280x720", "--no-banner", str(img_path)]
+                     else:
+                         print("[!] No camera util found. Creating mock image.")
+                         # Create a dummy image for testing
+                         # In real impl, checking os.system or similar
+                         with open(img_path, 'wb') as f:
+                             f.write(b'Mock Image Data') 
+                         camera_cmd = None
+
+                if camera_cmd:
+                    subprocess.run(camera_cmd, check=True)
+                
+                # Upload
+                if client.upload_dataset_image(str(img_path), camera_port="/dev/video0"):
+                     print("[+] Image captured and uploaded.")
+                else:
+                     print("[!] Upload failed.")
+                
+                # Clean up
+                if img_path.exists():
+                    img_path.unlink()
+                     
+            except Exception as e:
+                print(f"[!] Capture process failed: {e}")
 
 
 
@@ -315,7 +360,7 @@ def main():
             print("[.] Heartbeat with Discovery...")
             commands = client.heartbeat(bin_capacity=bin_level, discovery_report=discovery)
             if commands:
-                handle_commands(commands)
+                handle_commands(commands, client)
             
             if "--once" in sys.argv:
                 print("[*] --once flag detected. Exiting loop.")
