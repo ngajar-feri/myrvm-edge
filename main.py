@@ -245,25 +245,49 @@ def handle_commands(commands, client):
 
 
 
+def get_default_browser():
+    """Detects the default browser via x-www-browser alternative."""
+    try:
+        # Check x-www-browser alias
+        x_browser = shutil.which("x-www-browser")
+        if x_browser:
+            # Resolve symlink to get actual binary name
+            real_path = os.path.realpath(x_browser)
+            if "firefox" in real_path.lower():
+                return "firefox"
+            if "chromium" in real_path.lower():
+                return "chromium"
+    except Exception:
+        pass
+    return None
+
 def launch_kiosk(url):
-    """Launches Chromium or Firefox in Kiosk mode."""
+    """Launches default browser (Firefox/Chromium) in Kiosk mode."""
     print(f"[*] Launching Kiosk Browser: {url}")
     
-    # Check for Chromium
-    browser_bin = shutil.which("chromium-browser") or shutil.which("chromium")
-    args = [
-        "--kiosk",
-        "--noerrdialogs", 
-        "--disable-infobars",
-        "--check-for-update-interval=31536000",
-        "--ignore-certificate-errors",
-        url
-    ]
+    # Detect default preference
+    default_browser = get_default_browser()
+    browser_bin = None
+    args = []
     
-    if not browser_bin:
-        print("[!] Chromium not found. Trying Firefox...")
+    # 1. Try Firefox if it's default or explicitly requested
+    if default_browser == "firefox" or (not default_browser and shutil.which("firefox")):
+        print("[*] Using Firefox (Default/Fallback)...")
         browser_bin = shutil.which("firefox")
         args = ["--kiosk", url]
+    
+    # 2. Try Chromium if it's default or Firefox failed/missing
+    if not browser_bin:
+        print("[*] Firefox not found/default. Checking Chromium...")
+        browser_bin = shutil.which("chromium-browser") or shutil.which("chromium")
+        args = [
+            "--kiosk",
+            "--noerrdialogs", 
+            "--disable-infobars",
+            "--check-for-update-interval=31536000",
+            "--ignore-certificate-errors",
+            url
+        ]
     
     if not browser_bin:
         print("[!] No supported browser found (chromium/firefox). Kiosk launch skipped.")
