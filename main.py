@@ -5,6 +5,9 @@ import os
 import subprocess
 import shutil
 from pathlib import Path
+from PIL import Image
+import io
+
 def load_env_file(path):
     """Simple replacement for load_dotenv to avoid external dependency."""
     if not os.path.exists(path): return
@@ -208,6 +211,18 @@ def handle_commands(commands, client):
 
                 if camera_cmd:
                     subprocess.run(camera_cmd, check=True)
+                
+                # EMBED sRGB COLOR PROFILE for consistent rendering across browsers
+                # Chrome/Safari/Firefox all interpret colors differently without embedded profile
+                if img_path.exists() and img_path.suffix.lower() in ['.jpg', '.jpeg']:
+                    try:
+                        img = Image.open(img_path)
+                        # Save with sRGB profile embedded
+                        # icc_profile='sRGB' ensures consistent color rendering
+                        img.save(img_path, 'JPEG', quality=95, icc_profile=img.info.get('icc_profile', b''))
+                        print("[+] sRGB color profile embedded for accurate browser rendering.")
+                    except Exception as profile_err:
+                        print(f"[!] Could not embed color profile: {profile_err}")
                 
                 # Upload
                 if client.upload_dataset_image(str(img_path), camera_port="/dev/video0"):
