@@ -206,9 +206,6 @@ def handle_commands(commands, client):
                          camera_cmd = None
 
                 if camera_cmd:
-                    subprocess.run(camera_cmd, check=True)
-                
-                # Upload
                 if client.upload_dataset_image(str(img_path), camera_port="/dev/video0"):
                      print("[+] Image captured and uploaded.")
                 else:
