@@ -5,7 +5,7 @@ import os
 import subprocess
 import shutil
 from pathlib import Path
-from PIL import Image
+from PIL import Image, ImageCms
 import io
 
 def load_env_file(path):
@@ -217,9 +217,20 @@ def handle_commands(commands, client):
                 if img_path.exists() and img_path.suffix.lower() in ['.jpg', '.jpeg']:
                     try:
                         img = Image.open(img_path)
-                        # Save with sRGB profile embedded
-                        # icc_profile='sRGB' ensures consistent color rendering
-                        img.save(img_path, 'JPEG', quality=95, icc_profile=img.info.get('icc_profile', b''))
+                        # EMBED sRGB COLOR PROFILE for consistent rendering across browsers
+                        # Chrome/Safari/Firefox all interpret colors differently without embedded profile
+                        icc = img.info.get('icc_profile')
+                        if not icc:
+                            try:
+                                # Ensure we have a valid sRGB profile to embed
+                                srgb_profile = ImageCms.createProfile("sRGB")
+                                icc = ImageCms.ImageCmsProfile(srgb_profile).tobytes()
+                                print("[*] Generated new sRGB profile for embedding.")
+                            except Exception as e:
+                                print(f"[!] ImageCms failed: {e}")
+                                icc = b''
+                        
+                        img.save(img_path, 'JPEG', quality=95, icc_profile=icc)
                         print("[+] sRGB color profile embedded for accurate browser rendering.")
                     except Exception as profile_err:
                         print(f"[!] Could not embed color profile: {profile_err}")
