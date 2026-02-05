@@ -9,3 +9,4 @@ psutil
 pyserial
 ultralytics
 opencv-python-headless
+aiohttp

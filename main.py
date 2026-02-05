@@ -22,9 +22,9 @@ sys.path.append(os.path.dirname(__file__))
 
 from src.services.api_client import RvmApiClient
 from src.hardware.hardware_manager import HardwareManager
-from src.services.local_db import get_local_db
-from src.services.offline_mode import get_offline_controller
-from src.services.sync_manager import init_sync_manager, get_sync_manager
+
+# Lazy imports for offline modules to prevent startup crash
+# These are imported inside main() after basic setup
 
 # Constants
 BASE_DIR = Path(__file__).parent
@@ -431,16 +431,22 @@ def main():
             commands = client.heartbeat(bin_capacity=bin_level, discovery_report=discovery)
             
             # Offline Mode Integration: Update controller on heartbeat result
-            offline_controller = get_offline_controller()
-            if commands is not None:
-                # Heartbeat success - check for system_donation_user_id
-                offline_controller.on_heartbeat_success({
-                    'system_donation_user_id': getattr(client, '_system_donation_user_id', None)
-                })
-                handle_commands(commands, client)
-            else:
-                # Heartbeat failed
-                offline_controller.on_heartbeat_failure("No response from server")
+            try:
+                from src.services.offline_mode import get_offline_controller
+                offline_controller = get_offline_controller()
+                if commands is not None:
+                    # Heartbeat success - check for system_donation_user_id
+                    offline_controller.on_heartbeat_success({
+                        'system_donation_user_id': getattr(client, '_system_donation_user_id', None)
+                    })
+                    handle_commands(commands, client)
+                else:
+                    # Heartbeat failed
+                    offline_controller.on_heartbeat_failure("No response from server")
+            except ImportError as e:
+                print(f"[!] Offline module not available: {e}")
+                if commands:
+                    handle_commands(commands, client)
             
             if "--once" in sys.argv:
                 print("[*] --once flag detected. Exiting loop.")
