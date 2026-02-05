@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MyRVM - Mode Offline</title>
+    <style>
+        :root {
+            --primary: #10b981;
+            --primary-dark: #059669;
+            --bg-gradient-start: #ecfdf5;
+            --bg-gradient-end: #d1fae5;
+            --text-primary: #064e3b;
+            --text-secondary: #047857;
+            --card-bg: rgba(255, 255, 255, 0.95);
+            --shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: linear-gradient(135deg, var(--bg-gradient-start) 0%, var(--bg-gradient-end) 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            overflow: hidden;
+        }
+
+        .container {
+            max-width: 600px;
+            width: 100%;
+            text-align: center;
+        }
+
+        /* Status Badge */
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background: rgba(245, 158, 11, 0.15);
+            border: 1px solid rgba(245, 158, 11, 0.3);
+            border-radius: 20px;
+            margin-bottom: 30px;
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            background: #f59e0b;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        .status-text {
+            font-size: 14px;
+            font-weight: 600;
+            color: #b45309;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(0.9); }
+        }
+
+        /* Main Card */
+        .main-card {
+            background: var(--card-bg);
+            border-radius: 24px;
+            padding: 40px;
+            box-shadow: var(--shadow);
+            backdrop-filter: blur(10px);
+        }
+
+        .icon-container {
+            width: 100px;
+            height: 100px;
+            margin: 0 auto 25px;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 48px;
+        }
+
+        h1 {
+            font-size: 28px;
+            color: var(--text-primary);
+            margin-bottom: 12px;
+        }
+
+        .subtitle {
+            font-size: 16px;
+            color: var(--text-secondary);
+            margin-bottom: 30px;
+            line-height: 1.5;
+        }
+
+        /* Donation Button */
+        .donate-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            width: 100%;
+            padding: 20px 40px;
+            font-size: 20px;
+            font-weight: 700;
+            color: white;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            border: none;
+            border-radius: 16px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 10px 30px rgba(16, 185, 129, 0.4);
+        }
+
+        .donate-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 15px 40px rgba(16, 185, 129, 0.5);
+        }
+
+        .donate-btn:active {
+            transform: translateY(0);
+        }
+
+        .donate-btn .icon {
+            font-size: 24px;
+        }
+
+        /* Connection Status Footer */
+        .footer {
+            margin-top: 30px;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.5);
+            border-radius: 12px;
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+        .footer .reconnecting {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .spinner {
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(16, 185, 129, 0.3);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Transaction Modal */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.6);
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal {
+            background: white;
+            border-radius: 24px;
+            padding: 40px;
+            max-width: 500px;
+            width: 90%;
+            text-align: center;
+        }
+
+        .modal h2 {
+            font-size: 24px;
+            margin-bottom: 20px;
+            color: var(--text-primary);
+        }
+
+        .modal .instruction {
+            font-size: 16px;
+            color: var(--text-secondary);
+            margin-bottom: 30px;
+        }
+
+        .modal .close-btn {
+            padding: 12px 30px;
+            font-size: 16px;
+            background: #e5e7eb;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+        }
+
+        /* Location */
+        .location {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 14px;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .location .dot {
+            width: 8px;
+            height: 8px;
+            background: #ef4444;
+            border-radius: 50%;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Status Badge -->
+        <div class="status-badge">
+            <div class="status-dot"></div>
+            <span class="status-text">Mode Offline</span>
+        </div>
+
+        <!-- Main Card -->
+        <div class="main-card">
+            <div class="icon-container">🌱</div>
+            <h1>Donasi Botol Plastik</h1>
+            <p class="subtitle">
+                Mesin sedang dalam mode offline.<br>
+                Anda tetap dapat melakukan donasi botol.
+            </p>
+            <button class="donate-btn" onclick="startDonation()">
+                <span class="icon">♻️</span>
+                Mulai Donasi
+            </button>
+        </div>
+
+        <!-- Connection Footer -->
+        <div class="footer">
+            <div class="reconnecting">
+                <div class="spinner"></div>
+                <span id="reconnect-status">Menghubungkan ke server...</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Location -->
+    <div class="location">
+        <span class="dot"></span>
+        <span id="location-name">RVM Offline Mode</span>
+    </div>
+
+    <!-- Transaction Modal -->
+    <div class="modal-overlay" id="donationModal">
+        <div class="modal">
+            <h2>🌿 Mode Donasi Aktif</h2>
+            <p class="instruction">
+                Silakan masukkan botol plastik Anda ke dalam lubang mesin.<br><br>
+                Transaksi akan disimpan secara lokal dan<br>
+                disinkronkan saat koneksi pulih.
+            </p>
+            <button class="close-btn" onclick="closeModal()">Selesai</button>
+        </div>
+    </div>
+
+    <script>
+        // WebSocket connection to Local Bridge
+        const LOCAL_BRIDGE_URL = "{{ local_bridge_url }}";
+        let ws = null;
+        let reconnectAttempts = 0;
+
+        function connectLocalBridge() {
+            ws = new WebSocket(LOCAL_BRIDGE_URL);
+
+            ws.onopen = () => {
+                console.log('[OfflineKiosk] Connected to Local Bridge');
+                document.getElementById('reconnect-status').textContent = 'Terhubung ke Local Bridge';
+            };
+
+            ws.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                console.log('[OfflineKiosk] Message:', data);
+
+                if (data.type === 'status') {
+                    handleStatusUpdate(data.data);
+                }
+
+                if (data.type === 'deposit_ack') {
+                    console.log('[OfflineKiosk] Deposit acknowledged:', data);
+                }
+            };
+
+            ws.onclose = () => {
+                console.log('[OfflineKiosk] Disconnected from Local Bridge');
+                document.getElementById('reconnect-status').textContent = 'Reconnecting...';
+                setTimeout(connectLocalBridge, 3000);
+            };
+
+            ws.onerror = (err) => {
+                console.error('[OfflineKiosk] WebSocket error:', err);
+            };
+        }
+
+        function handleStatusUpdate(status) {
+            if (status.online) {
+                // Server is back online - redirect to server Kiosk
+                console.log('[OfflineKiosk] Server online! Redirecting...');
+                document.getElementById('reconnect-status').textContent = 'Server online! Redirecting...';
+                
+                // Redirect to server kiosk URL (from config)
+                setTimeout(() => {
+                    window.location.href = getServerKioskUrl();
+                }, 1500);
+            }
+        }
+
+        function getServerKioskUrl() {
+            // Read from config or use default
+            // This will be set by Edge device configuration
+            return localStorage.getItem('server_kiosk_url') || 'https://myrvm.ngajar.com/kiosk';
+        }
+
+        function startDonation() {
+            document.getElementById('donationModal').classList.add('active');
+            
+            // Send deposit start message to Local Bridge
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({
+                    type: 'deposit',
+                    items: [
+                        { bottle_type: 'plastic', weight: 0, points: 10 }
+                    ]
+                }));
+            }
+        }
+
+        function closeModal() {
+            document.getElementById('donationModal').classList.remove('active');
+        }
+
+        // Check for server connectivity periodically
+        async function checkServerHealth() {
+            try {
+                const serverUrl = getServerKioskUrl().replace('/kiosk', '/api/health');
+                const response = await fetch(serverUrl, { 
+                    method: 'GET',
+                    mode: 'no-cors',
+                    timeout: 5000 
+                });
+                
+                // If we get here, server might be up
+                document.getElementById('reconnect-status').textContent = 'Memeriksa server...';
+            } catch (e) {
+                document.getElementById('reconnect-status').textContent = 'Server tidak tersedia';
+            }
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            connectLocalBridge();
+            setInterval(checkServerHealth, 10000);
+        });
+    </script>
+</body>
+</html>

@@ -401,11 +401,21 @@ def main():
     hw = HardwareManager()
     hw.initialize_all()
     
-    # 7. Main Loop
-    print("[*] Starting Local WebSocket Bridge provided by RVM-Edge...")
+    # 7. Start Local Services
+    print("[*] Starting Local WebSocket Bridge (port 8002)...")
     local_ws_process = subprocess.Popen(
-        [sys.executable, "src/network/ws_local.py"],
-        cwd=BASE_DIR
+        [sys.executable, "-m", "uvicorn", "src.network.ws_local:start_local_bridge", "--host", "0.0.0.0", "--port", "8002"],
+        cwd=BASE_DIR,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL
+    )
+    
+    print("[*] Starting Offline Kiosk Frontend (port 8001)...")
+    offline_kiosk_process = subprocess.Popen(
+        [sys.executable, "-m", "uvicorn", "src.offline_kiosk.app:app", "--host", "0.0.0.0", "--port", "8001"],
+        cwd=BASE_DIR,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL
     )
 
     print("[*] Entering Main Loop...")
@@ -458,6 +468,8 @@ def main():
         hw.cleanup()
         local_ws_process.terminate()
         local_ws_process.wait()
+        offline_kiosk_process.terminate()
+        offline_kiosk_process.wait()
 
 if __name__ == "__main__":
     main()
