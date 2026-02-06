@@ -16,11 +16,15 @@ SERVICES=("myrvm-edge" "myrvm-updater")
 show_status() {
     echo -e "${CYAN}=== Status Service ===${NC}"
     for service in "${SERVICES[@]}"; do
-        status=$(systemctl is-active $service 2>/dev/null || echo "not-found")
+        # Check if service is loaded/exists
+        if ! systemctl list-unit-files "$service.service" &>/dev/null; then
+            echo -e "$service: ${RED}NOT INSTALLED${NC}"
+            continue
+        fi
+
+        status=$(systemctl is-active "$service" 2>/dev/null)
         if [ "$status" == "active" ]; then
             echo -e "$service: ${GREEN}RUNNING${NC}"
-        elif [ "$status" == "not-found" ]; then
-             echo -e "$service: ${RED}NOT INSTALLED${NC}"
         else
             echo -e "$service: ${RED}STOPPED ($status)${NC}"
         fi
