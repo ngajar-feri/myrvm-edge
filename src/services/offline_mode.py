@@ -41,7 +41,10 @@ class OfflineModeController:
         self._on_mode_change_callbacks: List[Callable] = []
         self._on_reconnect_callbacks: List[Callable] = []
         
-        logger.info("OfflineModeController initialized")
+        # Load persisted ID
+        self._load_persisted_system_donation_id()
+        
+        logger.info(f"OfflineModeController initialized. System Donation ID: {self.system_donation_user_id}")
     
     # ==================== Mode Management ====================
     
@@ -179,6 +182,24 @@ class OfflineModeController:
             "last_heartbeat": self.last_heartbeat_success.isoformat() if self.last_heartbeat_success else None,
             "consecutive_failures": self.consecutive_failures
         }
+        
+    def _load_persisted_system_donation_id(self):
+        """Load system_donation_user_id from credentials.json."""
+        try:
+            import os
+            import json
+            # Adjust path relative to this file: src/services/offline_mode.py -> config/credentials.json
+            config_path = os.path.join(os.path.dirname(__file__), '../../config/credentials.json')
+            
+            if os.path.exists(config_path):
+                with open(config_path, 'r') as f:
+                    data = json.load(f)
+                    user_id = data.get('system_donation_user_id')
+                    if user_id is not None:
+                        self.system_donation_user_id = int(user_id)
+                        logger.info(f"Loaded persisted System Donation ID: {self.system_donation_user_id}")
+        except Exception as e:
+            logger.error(f"Failed to load persisted ID: {e}")
 
 
 # Singleton instance

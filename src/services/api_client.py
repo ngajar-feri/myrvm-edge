@@ -96,6 +96,17 @@ class RvmApiClient:
             
             if data.get('status') == 'success':
                 self.machine_info = data['data']
+                
+                # Extract and Persist System Donation User ID
+                policy = self.machine_info.get('policy', {})
+                sys_don_id = policy.get('system_donation_user_id')
+                
+                if sys_don_id is not None:
+                    # Helper to save to credentials.json
+                    self._save_system_donation_id(sys_don_id)
+                    # Store in instance for immediate use
+                    self._system_donation_user_id = sys_don_id
+                
                 print(f"[+] Handshake Success! RVM Name: {self.machine_info['identity']['rvm_name']}")
                 return True, self.machine_info
             else:
@@ -463,3 +474,25 @@ class RvmApiClient:
             pass
         
         return metrics
+
+    def _save_system_donation_id(self, user_id):
+        """Save system_donation_user_id to credentials.json for offline use."""
+        try:
+            config_path = os.path.join(os.path.dirname(__file__), '../../config/credentials.json')
+            
+            data = {}
+            if os.path.exists(config_path):
+                with open(config_path, 'r') as f:
+                    try:
+                        data = json.load(f)
+                    except json.JSONDecodeError:
+                        pass
+            
+            data['system_donation_user_id'] = user_id
+            
+            with open(config_path, 'w') as f:
+                json.dump(data, f, indent=2)
+                
+            print(f"[*] Persisted System Donation ID: {user_id}")
+        except Exception as e:
+            print(f"[!] Failed to save system donation ID: {e}")

@@ -9,3 +9,6 @@ config/credentials.json
 .vscode/
 .idea/
 *.log
+data/local.db
+data/local.db-journal
+data/temp_images/*
