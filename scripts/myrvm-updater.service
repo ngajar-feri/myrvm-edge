@@ -6,6 +6,7 @@ Wants=network-online.target
 [Service]
 Type=oneshot
 User={{USER}}
+Group=rvm-devs
 WorkingDirectory={{WORKING_DIR}}
 ExecStart=/usr/bin/git pull --rebase origin dev-edge
 StandardOutput=journal
