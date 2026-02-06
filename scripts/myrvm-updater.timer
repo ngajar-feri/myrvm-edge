@@ -1,5 +1,7 @@
 [Unit]
 Description=Run MyRVM Edge Auto-Updater every 10 minutes
+After=network.target network-online.target
+Wants=network-online.target
 
 [Timer]
 OnBootSec=5min

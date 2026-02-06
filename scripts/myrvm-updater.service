@@ -1,6 +1,7 @@
 [Unit]
-Description=MyRVM Edge Auto-Updater
-After=network.target
+Description=MyRVM Edge Auto-Updater v2.0 (2026)
+After=network.target network-online.target
+Wants=network-online.target
 
 [Service]
 Type=oneshot

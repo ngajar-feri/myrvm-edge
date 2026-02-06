@@ -1,14 +1,16 @@
 [Unit]
-Description=MyRVM Edge Service
-After=network.target
+Description=MyRVM Edge Client v2.0 (2026)
+After=network.target network-online.target
+Wants=network-online.target
 
 [Service]
 Type=simple
 User={{USER}}
+Group=rvm-devs
 WorkingDirectory={{WORKING_DIR}}
 ExecStart={{WORKING_DIR}}/venv/bin/python -u main.py
 Restart=always
-RestartSec=5
+RestartSec=10
 StandardOutput=journal
 StandardError=journal
 
