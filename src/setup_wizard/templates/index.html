@@ -356,29 +356,64 @@
             if (e.target.files.length > 0) fileName.textContent = e.target.files[0].name;
         };
 
-        async function handleResponse(res) {
+        const manualBtn = document.getElementById('manualBtn');
+        const uploadBtn = document.getElementById('uploadBtn');
+
+        function setLoading(isLoading, btn, text = "Save") {
+            if (isLoading) {
+                btn.disabled = true;
+                btn.textContent = "Verifying Credentials...";
+                status.style.display = 'none';
+            } else {
+                btn.disabled = false;
+                btn.textContent = text;
+            }
+        }
+
+        async function handleResponse(res, btn, originalText) {
             const data = await res.json();
             status.textContent = data.message || data.detail;
             status.className = 'status ' + (res.ok ? 'success' : 'error');
+            
             if (res.ok) {
-                document.querySelectorAll('button').forEach(b => b.disabled = true);
+                btn.textContent = "Success! Restarting...";
+                // Keep disabled
                 setTimeout(() => window.location.reload(), 3000);
+            } else {
+                setLoading(false, btn, originalText);
             }
         }
 
         document.getElementById('uploadForm').onsubmit = async (e) => {
             e.preventDefault();
+            setLoading(true, uploadBtn, "Provision Device");
+            
             const formData = new FormData();
             formData.append('file', fileInput.files[0]);
-            const res = await fetch('/upload', { method: 'POST', body: formData });
-            handleResponse(res);
+            
+            try {
+                const res = await fetch('/upload', { method: 'POST', body: formData });
+                handleResponse(res, uploadBtn, "Provision Device");
+            } catch (err) {
+                status.textContent = "Network Error: " + err.message;
+                status.className = 'status error';
+                setLoading(false, uploadBtn, "Provision Device");
+            }
         };
 
         document.getElementById('manualForm').onsubmit = async (e) => {
             e.preventDefault();
+            setLoading(true, manualBtn, "Save Configuration");
+            
             const formData = new FormData(e.target);
-            const res = await fetch('/manual', { method: 'POST', body: formData });
-            handleResponse(res);
+            try {
+                const res = await fetch('/manual', { method: 'POST', body: formData });
+                handleResponse(res, manualBtn, "Save Configuration");
+            } catch (err) {
+                status.textContent = "Network Error: " + err.message;
+                status.className = 'status error';
+                setLoading(false, manualBtn, "Save Configuration");
+            }
         };
     </script>
 </body>
