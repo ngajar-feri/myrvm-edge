@@ -56,15 +56,13 @@ class RvmApiClient:
         """
         Performs initial handshake to sync identity and config.
         Sends full payload per GAI-handshake.md specification.
+        Returns: (success: bool, data: dict, error: str)
         """
         endpoint = f"{self.base_url}/edge/handshake"
         
         # Use centralized EdgeDiagnostics to build payload
         try:
             from ..hardware.edge_diagnostics import EdgeDiagnostics
-            # Initialize with reference to self for hardware_map if needed, 
-            # though EdgeDiagnostics currently operates independently or with its own probe.
-            # We can pass hardware_manager if we had one instantiated, but for now it's standalone.
             diag = EdgeDiagnostics()
             
             # Get full specs which matches the 1-10 structure
@@ -73,10 +71,6 @@ class RvmApiClient:
             # Overwrite name/id if strictly managed by client (optional, but good for consistency)
             payload["hardware_id"] = self.device_id
             payload["name"] = self.name
-            
-            # Ensure controller_type matches what is passed if logic differs, 
-            # but diagnostics handles it better usually.
-            # payload["controller_type"] = controller_type # Let diagnostics detect it
             
         except ImportError:
              print("[!] EdgeDiagnostics module not found, falling back to legacy payload")
@@ -89,12 +83,12 @@ class RvmApiClient:
                 "status": "fallback"
             }
         except Exception as e:
-             print(f"[!] Error building handshake payload: {e}")
-             return False, None
+             error_msg = f"Error building handshake payload: {e}"
+             print(f"[!] {error_msg}")
+             return False, None, error_msg
         
         try:
             print(f"[*] Handshaking with {endpoint}...")
-            # print(json.dumps(payload, indent=2)) # Debug payload
             response = self.session.post(endpoint, json=payload, timeout=15)
             response.raise_for_status()
             data = response.json()
@@ -113,14 +107,16 @@ class RvmApiClient:
                     self._system_donation_user_id = sys_don_id
                 
                 print(f"[+] Handshake Success! RVM Name: {self.machine_info['identity']['rvm_name']}")
-                return True, self.machine_info
+                return True, self.machine_info, None
             else:
-                print(f"[-] Handshake Failed: {data.get('message')}")
-                return False, None
+                error_msg = data.get('message', 'Unknown server error')
+                print(f"[-] Handshake Failed: {error_msg}")
+                return False, None, error_msg
                 
         except requests.exceptions.RequestException as e:
-            print(f"[!] Network Error during Handshake: {str(e)}")
-            return False, None
+            error_msg = f"Network Error: {str(e)}"
+            print(f"[!] {error_msg}")
+            return False, None, error_msg
 
     def deposit(self, image_path, metadata):
         """

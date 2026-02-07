@@ -60,6 +60,11 @@ def verify_credentials(serial, api_key, name, app_env, base_url):
     success, data = client.handshake()
     return success, data
 
+    # We rely on client.handshake() causing side effects or printing
+    # But now it returns (success, data, error_msg)
+    success, data, error_msg = client.handshake()
+    return success, data, error_msg
+
 def shutdown():
     """Shutdown the server after a short delay"""
     time.sleep(2)
@@ -70,7 +75,7 @@ async def index(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
 
 @app.post("/upload")
-async def upload_config(file: UploadFile = File(...)):
+async def upload_config(file: UploadFile = File(...), app_env: str = Form(...), base_url: str = Form(...)):
     if not file.filename.endswith('.json'):
         raise HTTPException(status_code=400, detail="Only JSON files allowed")
     
@@ -85,16 +90,21 @@ async def upload_config(file: UploadFile = File(...)):
                 raise HTTPException(status_code=400, detail=f"Missing required field: {field}")
         
         # Verify Credentials BEFORE Saving
-        success, handshake_data = verify_credentials(
+        # Use form fields for environment, but fallback to JSON if missing (though form is robust now)
+        success, handshake_data, error_msg = verify_credentials(
             data['serial_number'], 
             data['api_key'], 
             data['name'],
-            data.get('app_env', 'production'),
-            data.get('base_url', 'https://myrvm.penelitian.my.id')
+            app_env,
+            base_url
         )
         
         if not success:
-            raise Exception("Handshake Failed. Cek API Key/Serial atau Koneksi Internet.")
+            raise Exception(f"Handshake Failed: {error_msg}")
+
+        # Update data with selected env for saving
+        data['app_env'] = app_env
+        data['base_url'] = base_url
 
         # Write to secrets.env
         save_credentials(data)
@@ -123,10 +133,10 @@ async def manual_config(data: dict):
         base_url = data.get('base_url', 'https://myrvm.penelitian.my.id')
 
         # Verify Credentials BEFORE Saving
-        success, handshake_data = verify_credentials(serial_number, api_key, name, app_env, base_url)
+        success, handshake_data, error_msg = verify_credentials(serial_number, api_key, name, app_env, base_url)
         
         if not success:
-            raise Exception("Handshake Failed. Cek API Key/Serial atau Koneksi Internet.")
+            raise Exception(f"Handshake Failed: {error_msg}")
 
         # Write to secrets.env
         save_credentials(data)
