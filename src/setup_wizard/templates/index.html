@@ -63,6 +63,17 @@
             box-shadow: var(--shadow);
             border: 1px solid var(--border);
             z-index: 10;
+            overflow-y: auto;
+            max-height: 90vh; /* Allow container to scroll itself if needed */
+        }
+
+        /* Keyboard Spacer to allow scrolling past the keyboard */
+        .keyboard-spacer {
+            height: 0;
+            transition: height 0.3s ease;
+        }
+        .keyboard-spacer.active {
+            height: 250px; /* Approximate keyboard height */
         }
 
         .logo {
@@ -267,6 +278,7 @@
         </div>
 
         <div id="status" class="status"></div>
+        <div id="keyboardSpacer" class="keyboard-spacer"></div>
     </div>
 
     <!-- Virtual Keyboard -->
@@ -295,6 +307,7 @@
 
         // Virtual Keyboard Logic
         const keyboard = document.getElementById('keyboard');
+        const keyboardSpacer = document.getElementById('keyboardSpacer');
         let currentInput = null;
 
         const keys = [
@@ -315,7 +328,8 @@
                 if (k === '⌫') key.classList.add('wide');
                 
                 key.textContent = k;
-                key.onclick = (e) => {
+                // Use pointerdown for faster response on touch
+                key.onpointerdown = (e) => {
                     e.preventDefault();
                     if (!currentInput) return;
                     
@@ -337,12 +351,14 @@
         function showKeyboard(input) {
             currentInput = input;
             keyboard.classList.add('show');
+            keyboardSpacer.classList.add('active');
             // Scroll to input
             setTimeout(() => input.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300);
         }
 
         function hideKeyboard() {
             keyboard.classList.remove('show');
+            keyboardSpacer.classList.remove('active');
             currentInput = null;
         }
 
