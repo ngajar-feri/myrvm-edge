@@ -390,9 +390,9 @@ def main():
     config = {}
     
     while not handshake_success:
-        handshake_success, config = client.handshake(controller_type=model)
+        handshake_success, config, error_msg = client.handshake(controller_type=model)
         if not handshake_success:
-            print("[!] Handshake failed. Retrying in 5 seconds...")
+            print(f"[!] Handshake failed: {error_msg}. Retrying in 5 seconds...")
             time.sleep(5)
             
     print(f"[*] Handshake Success! Kiosk URL: {config.get('kiosk', {}).get('url')}")

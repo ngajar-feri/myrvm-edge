@@ -1,6 +1,9 @@
 from fastapi import FastAPI, Request, UploadFile, File, Form, HTTPException
 # Force update for deployment
 import logging
+
+# Version Tag for Debugging
+print("=== SETUP WIZARD v2.1.0 (Handshake Fix) ===")
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
