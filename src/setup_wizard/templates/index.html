@@ -216,6 +216,18 @@
             <button class="tab-btn" onclick="showTab('manual')">Manual Entry</button>
         </div>
 
+        <div class="input-group">
+            <label>Server Environment</label>
+            <select id="serverEnv" class="input-select" style="width: 100%; padding: 0.8rem 1rem; border-radius: 0.75rem; border: 1px solid var(--border); background: var(--input-bg); color: var(--text-main); font-family: inherit; font-size: 1rem; margin-bottom: 1rem;">
+                <option value="production">Production (myrvm.penelitian.my.id)</option>
+                <option value="local">Local (myrvm.orb.local)</option>
+            </select>
+            <label>Server API URL</label>
+            <input type="text" id="serverUrl" value="https://myrvm.penelitian.my.id" placeholder="https://api.example.com">
+        </div>
+
+        <hr style="border: 0; border-top: 1px solid var(--border); margin: 1.5rem 0;">
+
         <!-- Upload Tab -->
         <div id="uploadTab" class="form-content active">
             <form id="uploadForm">
@@ -370,49 +382,93 @@
             }
         }
 
-        async function handleResponse(res, btn, originalText) {
-            const data = await res.json();
-            status.textContent = data.message || data.detail;
-            status.className = 'status ' + (res.ok ? 'success' : 'error');
-            
-            if (res.ok) {
-                btn.textContent = "Success! Restarting...";
-                // Keep disabled
-                setTimeout(() => window.location.reload(), 3000);
-            } else {
-                setLoading(false, btn, originalText);
-            }
-        }
+        // Environment & URL Handling
+        const serverEnv = document.getElementById('serverEnv');
+        const serverUrl = document.getElementById('serverUrl');
+        const uploadForm = document.getElementById('uploadForm');
+        const manualForm = document.getElementById('manualForm');
 
-        document.getElementById('uploadForm').onsubmit = async (e) => {
-            e.preventDefault();
-            setLoading(true, uploadBtn, "Provision Device");
-            
-            const formData = new FormData();
-            formData.append('file', fileInput.files[0]);
-            
-            try {
-                const res = await fetch('/upload', { method: 'POST', body: formData });
-                handleResponse(res, uploadBtn, "Provision Device");
-            } catch (err) {
-                status.textContent = "Network Error: " + err.message;
-                status.className = 'status error';
-                setLoading(false, uploadBtn, "Provision Device");
+        serverEnv.addEventListener('change', () => {
+            if (serverEnv.value === 'production') {
+                serverUrl.value = 'https://myrvm.penelitian.my.id';
+            } else {
+                serverUrl.value = 'https://myrvm.orb.local';
             }
+        });
+
+        // Form Submission logic
+        uploadForm.onsubmit = async (e) => {
+            e.preventDefault();
+            const file = fileInput.files[0];
+            if (!file) return;
+
+            uploadBtn.disabled = true;
+            uploadBtn.textContent = 'Processing...';
+
+            const reader = new FileReader();
+            reader.onload = async (event) => {
+                try {
+                    const data = JSON.parse(event.target.result);
+                    const config = data.rvm_edge_config || {};
+                    
+                    const response = await fetch('/upload', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            serial_number: config.device_id,
+                            api_key: config.api_key,
+                            name: config.location_name,
+                            app_env: serverEnv.value,
+                            base_url: serverUrl.value
+                        })
+                    });
+
+                    const result = await response.json();
+                    if (result.success) {
+                        alert('Device provisioned successfully!');
+                        location.reload();
+                    } else {
+                        alert('Error: ' + result.message);
+                    }
+                } catch (err) {
+                    alert('Invalid JSON file');
+                } finally {
+                    uploadBtn.disabled = false;
+                    uploadBtn.textContent = 'Provision Device';
+                }
+            };
+            reader.readAsText(file);
         };
 
-        document.getElementById('manualForm').onsubmit = async (e) => {
+        manualForm.onsubmit = async (e) => {
             e.preventDefault();
-            setLoading(true, manualBtn, "Save Configuration");
-            
-            const formData = new FormData(e.target);
+            const formData = new FormData(manualForm);
+            const data = Object.fromEntries(formData.entries());
+            data.app_env = serverEnv.value;
+            data.base_url = serverUrl.value;
+
+            manualBtn.disabled = true;
+            manualBtn.textContent = 'Processing...';
+
             try {
-                const res = await fetch('/manual', { method: 'POST', body: formData });
-                handleResponse(res, manualBtn, "Save Configuration");
+                const response = await fetch('/manual', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+
+                const result = await response.json();
+                if (result.success) {
+                    alert('Configuration saved successfully!');
+                    location.reload();
+                } else {
+                    alert('Error: ' + result.message);
+                }
             } catch (err) {
-                status.textContent = "Network Error: " + err.message;
-                status.className = 'status error';
-                setLoading(false, manualBtn, "Save Configuration");
+                alert('Connection error');
+            } finally {
+                manualBtn.disabled = false;
+                manualBtn.textContent = 'Save Configuration';
             }
         };
     </script>

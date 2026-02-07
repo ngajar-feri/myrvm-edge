@@ -345,10 +345,13 @@ def main():
         print("[*] Provisioned! Proceeding to boot...")
 
     # 2. Load Credentials
-    load_env_file(BASE_DIR / ".env")
+    # Priority: secrets.env > .env (internal dev)
+    load_env_file(BASE_DIR / ".env") 
     load_env_file(SECRETS_PATH)
+    
     api_key = os.getenv("RVM_API_KEY")
     serial_number = os.getenv("RVM_SERIAL_NUMBER")
+    app_env = os.getenv("APP_ENV", "production")
     
     if not api_key:
         print("[!] Invalid secrets.env. Missing API Key.")
@@ -357,21 +360,24 @@ def main():
     # 3. Hardware Info
     hw_serial, model = get_device_info()
     
-    # Override HW Serial if provided in JSON (usually we want Physical, but maybe Logic ID?)
-    # Spec says: hardware_id: "RVM-202601-006" from json.
-    # But physical ID is useful for asset tracking. 
-    # Let's use the one from secrets as the "Logical ID" for Handshake.
-    
     print(f"[*] Logic ID: {serial_number}")
     print(f"[*] Physical ID: {hw_serial}")
     print(f"[*] Controller: {model}")
+    print(f"[*] Environment: {app_env}")
     
     # 4. Initialize API Client
-    # Respect BASE_URL from secrets.env/env if provided, otherwise fallback to production
-    if os.getenv("APP_ENV") == "production":
-        server_url = os.getenv("BASE_URL", "https://myrvm.penelitian.my.id")
-    else:
-        server_url = os.getenv("DEV_BASE_URL", "http://100.105.121.8:8001")
+    # BASE_URL now comes specifically from secrets.env (provisioned during Day-0)
+    server_url = os.getenv("BASE_URL")
+    
+    # Fallback for older secrets.env without BASE_URL
+    if not server_url:
+        if app_env == "production":
+            server_url = "https://myrvm.penelitian.my.id"
+        else:
+            # Look for DEV_BASE_URL in env or use localhost default
+            server_url = os.getenv("DEV_BASE_URL", "http://100.105.121.8:8001")
+    
+    print(f"[*] Server URL: {server_url}")
     
     client = RvmApiClient(
         base_url=f"{server_url}/api/v1", 

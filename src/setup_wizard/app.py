@@ -35,14 +35,9 @@ def load_base_env():
                     key, val = line.strip().split('=', 1)
                     os.environ[key] = val
 
-def verify_credentials(serial, api_key, name):
-    load_base_env()
-    
-    # Determine Server URL
-    if os.getenv("APP_ENV") == "production":
-        server_url = os.getenv("BASE_URL", "https://myrvm.penelitian.my.id")
-    else:
-        server_url = os.getenv("DEV_BASE_URL", "http://100.105.121.8:8001")
+def verify_credentials(serial, api_key, name, app_env, base_url):
+    # Use the base_url provided from the form
+    server_url = base_url.rstrip('/')
         
     client = RvmApiClient(
         base_url=f"{server_url}/api/v1",
@@ -51,7 +46,7 @@ def verify_credentials(serial, api_key, name):
         name=name
     )
     
-    print(f"[*] Verifying credentials for {serial} at {server_url}...")
+    print(f"[*] Verifying credentials for {serial} at {server_url} (Env: {app_env})...")
     success, data = client.handshake()
     return success, data
 
@@ -80,7 +75,13 @@ async def upload_config(file: UploadFile = File(...)):
                 raise HTTPException(status_code=400, detail=f"Missing required field: {field}")
         
         # Verify Credentials BEFORE Saving
-        success, handshake_data = verify_credentials(data['serial_number'], data['api_key'], data['name'])
+        success, handshake_data = verify_credentials(
+            data['serial_number'], 
+            data['api_key'], 
+            data['name'],
+            data.get('app_env', 'production'),
+            data.get('base_url', 'https://myrvm.penelitian.my.id')
+        )
         
         if not success:
             raise Exception("Handshake Failed. Cek API Key/Serial atau Koneksi Internet.")
@@ -103,24 +104,20 @@ async def upload_config(file: UploadFile = File(...)):
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/manual")
-async def manual_config(
-    serial_number: str = Form(...),
-    api_key: str = Form(...),
-    name: str = Form(...)
-):
+async def manual_config(data: dict):
     try:
+        serial_number = data.get('serial_number')
+        api_key = data.get('api_key')
+        name = data.get('name')
+        app_env = data.get('app_env', 'production')
+        base_url = data.get('base_url', 'https://myrvm.penelitian.my.id')
+
         # Verify Credentials BEFORE Saving
-        success, handshake_data = verify_credentials(serial_number, api_key, name)
+        success, handshake_data = verify_credentials(serial_number, api_key, name, app_env, base_url)
         
         if not success:
             raise Exception("Handshake Failed. Cek API Key/Serial atau Koneksi Internet.")
 
-        data = {
-            "serial_number": serial_number,
-            "api_key": api_key,
-            "name": name
-        }
-        
         # Write to secrets.env
         save_credentials(data)
         
@@ -144,6 +141,9 @@ def save_credentials(data):
         f.write(f"RVM_SERIAL_NUMBER={data['serial_number']}\n")
         f.write(f"RVM_API_KEY={data['api_key']}\n")
         f.write(f"RVM_NAME={data['name']}\n")
+        f.write(f"APP_ENV={data.get('app_env', 'production')}\n")
+        f.write(f"BASE_URL={data.get('base_url', 'https://myrvm.penelitian.my.id')}\n")
+        f.write(f"SSL_VERIFY={os.getenv('SSL_VERIFY', 'true')}\n")
         f.write(f"RVM_GENERATED_AT={data.get('generated_at', time.strftime('%Y-%m-%d %H:%M:%S'))}\n")
 
 def save_system_donation_id(user_id):
