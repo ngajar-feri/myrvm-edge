@@ -19,10 +19,17 @@ echo "[*] Stopping myrvm-edge service..."
 sudo systemctl stop myrvm-edge.service
 
 echo "[*] Removing configuration..."
-PROJECT_DIR="/home/raspi1/myrvm-edge-new"
-rm -f "$PROJECT_DIR/config/secrets.env"
-rm -f "$PROJECT_DIR/config/credentials.json"
-rm -f "$PROJECT_DIR/config/.maintenance_mode"
+PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+
+# Ensure we are in the right place
+if [ ! -f "$PROJECT_DIR/main.py" ]; then
+    echo "❌ Error: Could not determine PROJECT_DIR (main.py not found in $PROJECT_DIR)"
+    exit 1
+fi
+
+sudo rm -f "$PROJECT_DIR/config/secrets.env"
+sudo rm -f "$PROJECT_DIR/config/credentials.json"
+sudo rm -f "$PROJECT_DIR/config/.maintenance_mode"
 
 echo "[*] Restarting service..."
 sudo systemctl start myrvm-edge.service
