@@ -380,7 +380,15 @@ def main():
     print(f"[*] Server URL: {server_url}")
     
     # SSL Verify Logic
-    ssl_verify = os.getenv("SSL_VERIFY", "true").lower() == "true"
+    # 1. Trust secrets.env first
+    ssl_verify_env = os.getenv("SSL_VERIFY", "true").lower()
+    ssl_verify = ssl_verify_env == "true"
+    
+    # 2. But Force-Disable for known local domains to prevent Day-0 lockouts
+    if 'localhost' in server_url or '.local' in server_url or '127.0.0.1' in server_url or app_env == 'local':
+        print("[*] Local environment detected: Disabling SSL Verification.")
+        ssl_verify = False
+        
     print(f"[*] SSL Verify: {ssl_verify}")
 
     client = RvmApiClient(
