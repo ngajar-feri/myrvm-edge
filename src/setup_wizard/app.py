@@ -1,4 +1,6 @@
 from fastapi import FastAPI, Request, UploadFile, File, Form, HTTPException
+# Force update for deployment
+import logging
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
