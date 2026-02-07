@@ -545,7 +545,10 @@
                         location.reload();
                     } else {
                         // Handle FastAPI 'detail' or custom 'message'
-                        const errorMsg = result.detail || result.message || 'Unknown error occurred';
+                        let errorMsg = result.detail || result.message || 'Unknown error occurred';
+                        if (typeof errorMsg === 'object') {
+                            errorMsg = JSON.stringify(errorMsg);
+                        }
                         alert('Error: ' + errorMsg);
                     }
                 } catch (err) {
@@ -584,7 +587,10 @@
                     location.reload();
                 } else {
                      // Handle FastAPI 'detail' or custom 'message'
-                    const errorMsg = result.detail || result.message || 'Unknown error occurred';
+                    let errorMsg = result.detail || result.message || 'Unknown error occurred';
+                    if (typeof errorMsg === 'object') {
+                        errorMsg = JSON.stringify(errorMsg);
+                    }
                     alert('Error: ' + errorMsg);
                 }
             } catch (err) {
