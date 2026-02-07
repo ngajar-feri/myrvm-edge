@@ -38,15 +38,25 @@ def load_base_env():
 def verify_credentials(serial, api_key, name, app_env, base_url):
     # Use the base_url provided from the form
     server_url = base_url.rstrip('/')
+    
+    # Auto-disable SSL verify for local environment
+    should_verify = True
+    if app_env == 'local' or 'localhost' in server_url or '.local' in server_url or '127.0.0.1' in server_url:
+        should_verify = False
         
     client = RvmApiClient(
         base_url=f"{server_url}/api/v1",
         api_key=api_key,
         device_id=serial,
-        name=name
+        name=name,
+        ssl_verify=should_verify
     )
     
-    print(f"[*] Verifying credentials for {serial} at {server_url} (Env: {app_env})...")
+    print(f"[*] Verifying credentials for {serial} at {server_url} (Env: {app_env}, Verify: {should_verify})...")
+    # We rely on client.handshake() causing side effects or printing
+    # But ideally it should raise or return specific error.
+    # The current handshake() implementation returns (False, None) on failure and prints to stdout.
+    # For Setup Wizard, we'll try/catch deeper if we could, but let's stick to valid return.
     success, data = client.handshake()
     return success, data
 

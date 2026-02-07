@@ -7,14 +7,19 @@ import subprocess
 import glob
 
 class RvmApiClient:
-    def __init__(self, base_url, api_key, device_id, name=None):
+    def __init__(self, base_url, api_key, device_id, name=None, ssl_verify=None):
         self.base_url = base_url.rstrip('/')
         self.api_key = api_key
         self.device_id = device_id
         self.name = name or platform.node()
         self.session = requests.Session()
-        # Skip SSL verify for local dev/test if specified
-        self.verify = os.getenv("SSL_VERIFY", "true").lower() == "true"
+        
+        # SSL Verify Logic: Argument > Env Var > Default True
+        if ssl_verify is not None:
+            self.verify = ssl_verify
+        else:
+            self.verify = os.getenv("SSL_VERIFY", "true").lower() == "true"
+            
         self.session.verify = self.verify
         
         if not self.verify:
