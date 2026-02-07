@@ -34,6 +34,7 @@
         * {
             box-sizing: border-box;
             -webkit-tap-highlight-color: transparent;
+            user-select: none; /* Prevent text dragging on touch */
         }
 
         body {
@@ -46,9 +47,10 @@
             justify-content: flex-start;
             min-height: 100vh;
             margin: 0;
-            padding: 2rem 1rem;
+            padding: 1rem 1rem 5rem; /* Extra bottom padding for keyboard */
             transition: var(--transition);
             overflow-x: hidden;
+            -webkit-overflow-scrolling: touch;
         }
 
         .container {
@@ -127,6 +129,10 @@
             transition: var(--transition);
         }
         .input-group input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1); }
+        .input-group input::selection { background: transparent; }
+
+        /* Enable selection only for inputs if needed, but for virtual keyboard it's better to keep none */
+        .input-group input { user-select: text; }
 
         .upload-area {
             border: 2px dashed var(--border);
@@ -169,11 +175,12 @@
             border-top: 1px solid var(--border);
             padding: 1rem;
             transition: bottom 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            z-index: 100;
-            box-shadow: 0 -10px 25px rgba(0,0,0,0.1);
+            z-index: 999; /* Higher priority */
+            box-shadow: 0 -10px 40px rgba(0,0,0,0.2);
             display: grid;
             grid-template-columns: repeat(10, 1fr);
             gap: 0.5rem;
+            backdrop-filter: blur(10px); /* Premium feel */
         }
         .keyboard-container.show { bottom: 0; }
         .key {
@@ -293,8 +300,8 @@
         const keys = [
             '1','2','3','4','5','6','7','8','9','0',
             'Q','W','E','R','T','Y','U','I','O','P',
-            'A','S','D','F','G','H','J','K','L','-',
-            'Z','X','C','V','B','N','M','_','.', '⌫',
+            'A','S','D','F','G','H','J','K','L','.',
+            'Z','X','C','V','B','N','M','-','_', '⌫',
             'SPACE', 'DONE'
         ];
 
@@ -340,18 +347,28 @@
         }
 
         document.querySelectorAll('input[type="text"]').forEach(input => {
-            input.onfocus = () => showKeyboard(input);
-            // Prevent physical keyboard on touch devices
-            input.setAttribute('readonly', 'readonly');
-            input.onclick = () => {
-                input.removeAttribute('readonly');
-                input.focus();
+            // Prevent OS keyboard, but allow focus for the virtual keyboard
+            input.readOnly = true; 
+            
+            input.addEventListener('mousedown', (e) => {
+                e.preventDefault(); // Prevent standard focus
                 showKeyboard(input);
-            };
+            });
+
+            input.addEventListener('touchstart', (e) => {
+                e.preventDefault(); // Fast touch response
+                showKeyboard(input);
+            });
         });
 
         // Close keyboard when clicking outside
-        document.addEventListener('click', (e) => {
+        document.addEventListener('mousedown', (e) => {
+            if (!keyboard.contains(e.target) && !e.target.tagName.match(/INPUT/)) {
+                hideKeyboard();
+            }
+        });
+
+        document.addEventListener('touchstart', (e) => {
             if (!keyboard.contains(e.target) && !e.target.tagName.match(/INPUT/)) {
                 hideKeyboard();
             }
