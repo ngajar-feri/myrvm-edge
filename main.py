@@ -379,10 +379,15 @@ def main():
     
     print(f"[*] Server URL: {server_url}")
     
+    # SSL Verify Logic
+    ssl_verify = os.getenv("SSL_VERIFY", "true").lower() == "true"
+    print(f"[*] SSL Verify: {ssl_verify}")
+
     client = RvmApiClient(
         base_url=f"{server_url}/api/v1", 
         api_key=api_key,
-        device_id=serial_number # Using Logical Serial from JSON
+        device_id=serial_number, # Using Logical Serial from JSON
+        ssl_verify=ssl_verify
     )
     # 5. Handshake Loop
     print("[*] Initiating Handshake...")
@@ -478,4 +483,10 @@ def main():
         offline_kiosk_process.wait()
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except Exception as e:
+        import traceback
+        print(f"CRITICAL STARTUP ERROR: {e}")
+        traceback.print_exc()
+        sys.exit(1)
