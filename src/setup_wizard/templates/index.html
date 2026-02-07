@@ -521,25 +521,18 @@
             uploadBtn.disabled = true;
             uploadBtn.textContent = 'Processing...';
 
-            const reader = new FileReader();
-            reader.onload = async (event) => {
-                try {
-                    const data = JSON.parse(event.target.result);
-                    const config = data.rvm_edge_config || {};
-                    
-                    const response = await fetch('/upload', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            serial_number: config.device_id,
-                            api_key: config.api_key,
-                            name: config.location_name,
-                            app_env: selectedEnv,
-                            base_url: currentUrl
-                        })
-                    });
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('app_env', selectedEnv);
+            formData.append('base_url', currentUrl);
+            
+            try {
+                const response = await fetch('/upload', {
+                    method: 'POST',
+                    body: formData
+                });
 
-                    const result = await response.json();
+                const result = await response.json();
                     if (response.ok && result.status === 'success') {
                         alert('Device provisioned successfully! Rebooting...');
                         location.reload();
@@ -558,8 +551,6 @@
                     uploadBtn.disabled = false;
                     uploadBtn.textContent = 'Provision Device';
                 }
-            };
-            reader.readAsText(file);
         };
 
         manualForm.onsubmit = async (e) => {
