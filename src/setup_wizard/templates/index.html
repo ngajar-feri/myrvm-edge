@@ -34,7 +34,19 @@
         * {
             box-sizing: border-box;
             -webkit-tap-highlight-color: transparent;
-            user-select: none; /* Prevent text dragging on touch */
+            /* CRITICAL: Disable text selection for touch scrolling */
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+        }
+
+        /* Allow selection in inputs */
+        input, textarea {
+            -webkit-user-select: text;
+            -moz-user-select: text;
+            -ms-user-select: text;
+            user-select: text;
         }
 
         body {
@@ -47,10 +59,10 @@
             justify-content: flex-start;
             min-height: 100vh;
             margin: 0;
-            padding: 1rem 1rem 5rem; /* Extra bottom padding for keyboard */
+            padding: 2rem 1rem 400px 1rem; /* Extra padding for OSK space */
             transition: var(--transition);
             overflow-x: hidden;
-            -webkit-overflow-scrolling: touch;
+            -webkit-overflow-scrolling: touch; /* Smooth iOS scrolling */
         }
 
         .container {
@@ -63,17 +75,7 @@
             box-shadow: var(--shadow);
             border: 1px solid var(--border);
             z-index: 10;
-            overflow-y: auto;
-            max-height: 90vh; /* Allow container to scroll itself if needed */
-        }
-
-        /* Keyboard Spacer to allow scrolling past the keyboard */
-        .keyboard-spacer {
-            height: 0;
-            transition: height 0.3s ease;
-        }
-        .keyboard-spacer.active {
-            height: 250px; /* Approximate keyboard height */
+            margin-bottom: 2rem;
         }
 
         .logo {
@@ -140,10 +142,6 @@
             transition: var(--transition);
         }
         .input-group input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1); }
-        .input-group input::selection { background: transparent; }
-
-        /* Enable selection only for inputs if needed, but for virtual keyboard it's better to keep none */
-        .input-group input { user-select: text; }
 
         .upload-area {
             border: 2px dashed var(--border);
@@ -186,18 +184,17 @@
             border-top: 1px solid var(--border);
             padding: 1rem;
             transition: bottom 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            z-index: 999; /* Higher priority */
-            box-shadow: 0 -10px 40px rgba(0,0,0,0.2);
+            z-index: 100;
+            box-shadow: 0 -10px 25px rgba(0,0,0,0.1);
             display: grid;
             grid-template-columns: repeat(10, 1fr);
             gap: 0.5rem;
-            backdrop-filter: blur(10px); /* Premium feel */
         }
         .keyboard-container.show { bottom: 0; }
         .key {
             background: var(--input-bg);
             border: 1px solid var(--border);
-            border-radius: 0.5rem;
+            border-radius: 0.75rem; /* Softer corners */
             padding: 1rem 0;
             text-align: center;
             font-weight: 600;
@@ -205,12 +202,19 @@
             user-select: none;
             color: var(--text-main);
             font-size: 1.2rem;
+            transition: transform 0.1s;
         }
-        .key:active { background: var(--primary); color: white; transform: scale(0.95); }
+        .key:active { background: var(--primary); color: white; transform: scale(0.95); border-color: var(--primary); }
         .key.wide { grid-column: span 1.5; }
         .key.extra-wide { grid-column: span 2; }
         .key.space { grid-column: span 6; }
         .key.action { background: var(--primary); color: white; border: none; }
+
+        .input-group input.active-input {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2);
+            background: white;
+        }
 
         .status { margin-top: 1.5rem; font-size: 0.9rem; padding: 0.75rem; border-radius: 0.5rem; display: none; }
         .status.success { display: block; background: rgba(16, 185, 129, 0.1); color: var(--primary); border: 1px solid var(--primary); }
@@ -278,7 +282,6 @@
         </div>
 
         <div id="status" class="status"></div>
-        <div id="keyboardSpacer" class="keyboard-spacer"></div>
     </div>
 
     <!-- Virtual Keyboard -->
@@ -307,14 +310,13 @@
 
         // Virtual Keyboard Logic
         const keyboard = document.getElementById('keyboard');
-        const keyboardSpacer = document.getElementById('keyboardSpacer');
         let currentInput = null;
 
         const keys = [
             '1','2','3','4','5','6','7','8','9','0',
             'Q','W','E','R','T','Y','U','I','O','P',
-            'A','S','D','F','G','H','J','K','L','.',
-            'Z','X','C','V','B','N','M','-','_', '⌫',
+            'A','S','D','F','G','H','J','K','L','-',
+            'Z','X','C','V','B','N','M','_','.', '⌫',
             'SPACE', 'DONE'
         ];
 
@@ -328,8 +330,7 @@
                 if (k === '⌫') key.classList.add('wide');
                 
                 key.textContent = k;
-                // Use pointerdown for faster response on touch
-                key.onpointerdown = (e) => {
+                key.onclick = (e) => {
                     e.preventDefault();
                     if (!currentInput) return;
                     
@@ -349,42 +350,40 @@
         }
 
         function showKeyboard(input) {
+            if (currentInput) currentInput.classList.remove('active-input');
             currentInput = input;
+            currentInput.classList.add('active-input');
             keyboard.classList.add('show');
-            keyboardSpacer.classList.add('active');
-            // Scroll to input
-            setTimeout(() => input.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300);
+            // Scroll to input with a slight delay to allow keyboard animation
+            setTimeout(() => {
+                input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }, 300);
         }
 
         function hideKeyboard() {
             keyboard.classList.remove('show');
-            keyboardSpacer.classList.remove('active');
-            currentInput = null;
+            if (currentInput) {
+                currentInput.classList.remove('active-input');
+                currentInput = null;
+            }
         }
 
         document.querySelectorAll('input[type="text"]').forEach(input => {
-            // Prevent OS keyboard, but allow focus for the virtual keyboard
-            input.readOnly = true; 
-            
-            input.addEventListener('mousedown', (e) => {
-                e.preventDefault(); // Prevent standard focus
+            // Keep readonly effectively to suppress native keyboard
+            input.setAttribute('readonly', 'readonly');
+            // But allow our logic
+            input.onclick = (e) => {
+                // Do NOT remove readonly. 
+                // Just set active and show OSK.
                 showKeyboard(input);
-            });
-
-            input.addEventListener('touchstart', (e) => {
-                e.preventDefault(); // Fast touch response
+            };
+            input.onfocus = (e) => {
                 showKeyboard(input);
-            });
+            };
         });
 
         // Close keyboard when clicking outside
-        document.addEventListener('mousedown', (e) => {
-            if (!keyboard.contains(e.target) && !e.target.tagName.match(/INPUT/)) {
-                hideKeyboard();
-            }
-        });
-
-        document.addEventListener('touchstart', (e) => {
+        document.addEventListener('click', (e) => {
             if (!keyboard.contains(e.target) && !e.target.tagName.match(/INPUT/)) {
                 hideKeyboard();
             }
