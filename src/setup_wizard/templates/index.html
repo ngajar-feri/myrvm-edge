@@ -220,9 +220,56 @@
         .status.success { display: block; background: rgba(16, 185, 129, 0.1); color: var(--primary); border: 1px solid var(--primary); }
         .status.error { display: block; background: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px solid #ef4444; }
 
+        /* Multi-Step Logic */
+        .step-content { display: none; opacity: 0; transition: opacity 0.3s ease-in-out; }
+        .step-content.active { display: block; opacity: 1; animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
+
+        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Step 1: Env Cards */
+        .env-cards {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        .env-card {
+            background: var(--input-bg);
+            border: 2px solid transparent;
+            border-radius: 1rem;
+            padding: 1.5rem 1rem;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            text-align: center;
+        }
+        .env-card:hover { transform: translateY(-3px); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.05); }
+        .env-card:active { transform: scale(0.98); }
+        .env-card.selected {
+            background: white;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.1);
+        }
+        .env-card .icon { font-size: 2.5rem; margin-bottom: 0.5rem; }
+        .env-card h3 { margin: 0 0 0.25rem; font-size: 1rem; font-weight: 700; color: var(--text-main); }
+        .env-card p { margin: 0; font-size: 0.8rem; color: var(--text-muted); line-height: 1.3; }
+
+        .back-link {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            font-weight: 600;
+            font-size: 0.9rem;
+            cursor: pointer;
+            padding: 0;
+            display: inline-flex;
+            align-items: center;
+        }
+        .back-link:hover { color: var(--text-main); }
+
         /* Portrait Optimization */
         @media (orientation: portrait) {
             .container { max-width: 90%; }
+            .env-cards { grid-template-columns: 1fr; }
             .key { padding: 1.5rem 0; }
         }
     </style>
@@ -231,54 +278,70 @@
     <div class="container">
         <div class="logo">M</div>
         <h1>MyRVM Setup</h1>
-        <p>Welcome to the Day-0 Provisioning. Choose a method to configure this device.</p>
         
-        <div class="tabs">
-            <button class="tab-btn active" onclick="showTab('upload')">Upload JSON</button>
-            <button class="tab-btn" onclick="showTab('manual')">Manual Entry</button>
+        <!-- STEP 1: Environment Selection -->
+        <div id="step-env" class="step-content active">
+            <p>Select the server environment to connect to:</p>
+            <div class="env-cards">
+                <div class="env-card" onclick="selectEnvironment('production')">
+                    <div class="icon">🌍</div>
+                    <h3>Data Center</h3>
+                    <p>Production Cloud (myrvm.penelitian.my.id)</p>
+                </div>
+                <div class="env-card" onclick="selectEnvironment('local')">
+                    <div class="icon">💻</div>
+                    <h3>Local Dev</h3>
+                    <p>Internal Network (myrvm.orb.local)</p>
+                </div>
+            </div>
+            <!-- Dynamic URL Input (Hidden by default, shown if needed/advanced) -->
+            <div class="advanced-url" style="margin-top: 1.5rem;">
+                <label style="display:block; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.5rem;">Or Custom API URL:</label>
+                <input type="text" id="serverUrl" value="https://myrvm.penelitian.my.id" placeholder="https://api.example.com">
+            </div>
         </div>
 
-        <div class="input-group">
-            <label>Server Environment</label>
-            <select id="serverEnv" class="input-select" style="width: 100%; padding: 0.8rem 1rem; border-radius: 0.75rem; border: 1px solid var(--border); background: var(--input-bg); color: var(--text-main); font-family: inherit; font-size: 1rem; margin-bottom: 1rem;">
-                <option value="production">Production (myrvm.penelitian.my.id)</option>
-                <option value="local">Local (myrvm.orb.local)</option>
-            </select>
-            <label>Server API URL</label>
-            <input type="text" id="serverUrl" value="https://myrvm.penelitian.my.id" placeholder="https://api.example.com">
-        </div>
+        <!-- STEP 2: Provisioning Method -->
+        <div id="step-method" class="step-content">
+            <p style="margin-bottom: 1rem;">
+                <button class="back-link" onclick="goToStep('env')">← Change Environment</button>
+            </p>
+            
+            <div class="tabs">
+                <button class="tab-btn active" onclick="showTab('upload')">Upload JSON</button>
+                <button class="tab-btn" onclick="showTab('manual')">Manual Entry</button>
+            </div>
 
-        <hr style="border: 0; border-top: 1px solid var(--border); margin: 1.5rem 0;">
+            <!-- Upload Tab -->
+            <div id="uploadTab" class="form-content active">
+                <form id="uploadForm">
+                    <label class="upload-area" for="fileInput">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
+                        <span id="fileName">Drop rvm-credentials.json here</span>
+                        <input type="file" id="fileInput" accept=".json" required>
+                    </label>
+                    <button type="submit" class="btn-primary" id="uploadBtn">Provision Device</button>
+                </form>
+            </div>
 
-        <!-- Upload Tab -->
-        <div id="uploadTab" class="form-content active">
-            <form id="uploadForm">
-                <label class="upload-area" for="fileInput">
-                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
-                    <span id="fileName">Drop rvm-credentials.json here</span>
-                    <input type="file" id="fileInput" accept=".json" required>
-                </label>
-                <button type="submit" class="btn-primary" id="uploadBtn">Provision Device</button>
-            </form>
-        </div>
-
-        <!-- Manual Tab -->
-        <div id="manualTab" class="form-content">
-            <form id="manualForm">
-                <div class="input-group">
-                    <label>RVM Serial Number</label>
-                    <input type="text" name="serial_number" id="serialInput" placeholder="e.g. RVM-202601-001" required>
-                </div>
-                <div class="input-group">
-                    <label>API Key</label>
-                    <input type="text" name="api_key" id="apiKeyInput" placeholder="Enter API Key" required>
-                </div>
-                <div class="input-group">
-                    <label>Machine Name</label>
-                    <input type="text" name="name" id="nameInput" placeholder="e.g. Jakarta Hub 1" required>
-                </div>
-                <button type="submit" class="btn-primary" id="manualBtn">Save Configuration</button>
-            </form>
+            <!-- Manual Tab -->
+            <div id="manualTab" class="form-content">
+                <form id="manualForm">
+                    <div class="input-group">
+                        <label>RVM Serial Number</label>
+                        <input type="text" name="serial_number" id="serialInput" placeholder="e.g. RVM-202601-001" required>
+                    </div>
+                    <div class="input-group">
+                        <label>API Key</label>
+                        <input type="text" name="api_key" id="apiKeyInput" placeholder="Enter API Key" required>
+                    </div>
+                    <div class="input-group">
+                        <label>Machine Name</label>
+                        <input type="text" name="name" id="nameInput" placeholder="e.g. Jakarta Hub 1" required>
+                    </div>
+                    <button type="submit" class="btn-primary" id="manualBtn">Save Configuration</button>
+                </form>
+            </div>
         </div>
 
         <div id="status" class="status"></div>
@@ -414,25 +477,46 @@
             }
         }
 
-        // Environment & URL Handling
-        const serverEnv = document.getElementById('serverEnv');
-        const serverUrl = document.getElementById('serverUrl');
-        const uploadForm = document.getElementById('uploadForm');
-        const manualForm = document.getElementById('manualForm');
+        // Multi-Step Logic
+        let selectedEnv = 'production';
+        let customUrl = '';
 
-        serverEnv.addEventListener('change', () => {
-            if (serverEnv.value === 'production') {
-                serverUrl.value = 'https://myrvm.penelitian.my.id';
+        function selectEnvironment(env) {
+            selectedEnv = env;
+            // Highlight selected card
+            document.querySelectorAll('.env-card').forEach(c => c.classList.remove('selected'));
+            // Visual feedback could be added here, but we move to next step immediately
+            
+            // Set URL based on selection
+            const urlInput = document.getElementById('serverUrl');
+            if (env === 'production') {
+                urlInput.value = 'https://myrvm.penelitian.my.id';
             } else {
-                serverUrl.value = 'https://myrvm.orb.local';
+                urlInput.value = 'https://myrvm.orb.local';
             }
-        });
+            
+            // Go to next step
+            goToStep('method');
+        }
+
+        function goToStep(stepId) {
+            // Hide all steps
+            document.querySelectorAll('.step-content').forEach(s => s.classList.remove('active'));
+            // Show target step
+            document.getElementById('step-' + stepId).classList.add('active');
+            
+            // Hide keyboard if moving between steps
+            hideKeyboard();
+        }
 
         // Form Submission logic
         uploadForm.onsubmit = async (e) => {
             e.preventDefault();
             const file = fileInput.files[0];
             if (!file) return;
+            
+            // Get current URL value (it might have been edited in Step 1)
+            const currentUrl = document.getElementById('serverUrl').value;
 
             uploadBtn.disabled = true;
             uploadBtn.textContent = 'Processing...';
@@ -450,14 +534,14 @@
                             serial_number: config.device_id,
                             api_key: config.api_key,
                             name: config.location_name,
-                            app_env: serverEnv.value,
-                            base_url: serverUrl.value
+                            app_env: selectedEnv,
+                            base_url: currentUrl
                         })
                     });
 
                     const result = await response.json();
                     if (result.success) {
-                        alert('Device provisioned successfully!');
+                        alert('Device provisioned successfully! Rebooting...');
                         location.reload();
                     } else {
                         alert('Error: ' + result.message);
@@ -476,8 +560,10 @@
             e.preventDefault();
             const formData = new FormData(manualForm);
             const data = Object.fromEntries(formData.entries());
-            data.app_env = serverEnv.value;
-            data.base_url = serverUrl.value;
+            
+            const currentUrl = document.getElementById('serverUrl').value;
+            data.app_env = selectedEnv;
+            data.base_url = currentUrl;
 
             manualBtn.disabled = true;
             manualBtn.textContent = 'Processing...';
