@@ -62,9 +62,6 @@ def verify_credentials(serial, api_key, name, app_env, base_url):
     # But ideally it should raise or return specific error.
     # The current handshake() implementation returns (False, None) on failure and prints to stdout.
     # For Setup Wizard, we'll try/catch deeper if we could, but let's stick to valid return.
-    success, data = client.handshake()
-    return success, data
-
     # We rely on client.handshake() causing side effects or printing
     # But now it returns (success, data, error_msg)
     success, data, error_msg = client.handshake()
