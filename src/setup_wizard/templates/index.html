@@ -540,14 +540,17 @@
                     });
 
                     const result = await response.json();
-                    if (result.success) {
+                    if (response.ok && result.status === 'success') {
                         alert('Device provisioned successfully! Rebooting...');
                         location.reload();
                     } else {
-                        alert('Error: ' + result.message);
+                        // Handle FastAPI 'detail' or custom 'message'
+                        const errorMsg = result.detail || result.message || 'Unknown error occurred';
+                        alert('Error: ' + errorMsg);
                     }
                 } catch (err) {
-                    alert('Invalid JSON file');
+                    alert('Invalid JSON file or Server Error');
+                    console.error(err);
                 } finally {
                     uploadBtn.disabled = false;
                     uploadBtn.textContent = 'Provision Device';
@@ -576,14 +579,17 @@
                 });
 
                 const result = await response.json();
-                if (result.success) {
+                if (response.ok && result.status === 'success') {
                     alert('Configuration saved successfully!');
                     location.reload();
                 } else {
-                    alert('Error: ' + result.message);
+                     // Handle FastAPI 'detail' or custom 'message'
+                    const errorMsg = result.detail || result.message || 'Unknown error occurred';
+                    alert('Error: ' + errorMsg);
                 }
             } catch (err) {
                 alert('Connection error');
+                console.error(err);
             } finally {
                 manualBtn.disabled = false;
                 manualBtn.textContent = 'Save Configuration';
